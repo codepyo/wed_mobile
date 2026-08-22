@@ -6,32 +6,59 @@
 - `docs/ADMIN_CONSOLE_PLAN.md`
 
 최종 업데이트: 2026-08-22
-현재 단계: **1차 개발 완료 / Cloudflare Preview 배포 직전 체크포인트**
+현재 단계: **Cloudflare Workers 1차 Production 배포 완료 / D1 연결 진행 전**
 
 표기:
 
-- `[x]` 코드 구현 완료
-- `[~]` 코드 기반 구현 완료, 실제 데이터/Cloudflare 설정 또는 실기기 검증 필요
+- `[x]` 코드 구현 완료 또는 실제 배포 검증 완료
+- `[~]` 코드 기반 구현 완료, 실제 데이터/Cloudflare 설정 또는 추가 실기기 검증 필요
 - `[ ]` 미구현 / 배포 이후 개발 예정
 
 ---
 
-# 0. 배포 전 체크포인트
+# 0. 배포 체크포인트
 
-현재 브랜치 `feat/initial-wedding-invitation`은 로컬 Windows 환경에서 `npm run build` 성공이 확인되었고, GitHub Actions Node 24 CI도 최신 공개 기능 변경분까지 성공했다.
+`main` 기준 Cloudflare Workers Production 배포 완료.
 
-이번 시점부터는 기능을 더 많이 추가하기보다 **현재 상태를 Cloudflare Preview로 먼저 배포하여 실제 모바일 브라우저/네트워크/Cloudflare Functions 환경에서 검증한 뒤 다음 개발을 진행한다.**
+- Production URL: `https://wed-mobile.robin5544.workers.dev`
+- `/` 공개 청첩장 접근 정상
+- `/admin` 직접 접근 및 새로고침 라우팅 정상
+- 카카오맵 / 네이버지도 외부 링크 정상
+- 주소 복사 등 HTTPS browser API 기본 동작 확인
+- D1 미연결 상태이므로 Admin Dashboard 데이터 조회 실패 메시지는 현재 정상
 
-배포 전 의도적으로 비활성 상태로 유지하는 기능:
+현재부터는 Production/Preview 배포 결과를 기준으로 실제 모바일 환경에서 확인하면서 D1 → Admin → Media 순으로 개발한다.
 
-- RSVP: Cloudflare D1 연결 전 `false`
-- Guestbook: Cloudflare D1 연결 전 `false`
-- Contact: 실제 전화번호 입력 전 숨김
-- Account: 실제 계좌정보 입력 전 숨김
-- BGM: 실제 음원 입력 전 숨김
-- Kakao Share: JavaScript Key/등록 도메인/대표 이미지가 없으면 Native Share 또는 URL 복사 fallback
+---
 
-즉 첫 Preview 배포의 목적은 **공개 청첩장 UI/UX/반응형/라우팅/정적 자산/Cloudflare 빌드 환경 검증**이며, 실제 데이터 저장 기능은 D1 binding 이후 순차 활성화한다.
+# 1. 1차 Production 배포 관찰사항
+
+아래 내용은 첫 실배포 확인 결과이며, 즉시 수정하지 않고 이후 QA/개발 backlog로 유지한다.
+
+## UI / 모바일 색상
+
+- [~] PC에서는 기본 청첩장/관리자 화면이 밝게 표시되지만 일부 모바일에서는 전체 화면이 어둡게 표시되는 현상 확인
+- 코드의 의도된 기본 배경은 Warm Ivory / light이며 `Date`, `Location` 등 특정 section만 dark design임
+- Admin 역시 코드상 밝은 회색/흰색 UI가 정상 디자인임
+- 따라서 모바일 전체 dark 표시는 의도된 반응형 디자인이 아니며, Samsung Internet/Chrome 등의 강제 Dark Mode 또는 브라우저 색상 변환 가능성을 우선 점검
+- 이후 `color-scheme`, browser forced dark 대응, 실제 Android/Samsung Internet/Kakao 인앱 브라우저별 비교 필요
+
+## 지도
+
+- [x] 현재 지도 영역의 십자형 target/pin + `RAMADA PLAZA SUWON` 표시는 의도된 placeholder UI
+- [x] 카카오맵 / 네이버지도 외부 링크는 실제 위치 링크로 정상 동작 확인
+- [ ] 이후 Kakao Map SDK 또는 실제 지도 embed 적용 여부 결정
+- 실제 지도 embed 전까지 placeholder가 오동작은 아니지만 사용자에게 지도처럼 오해될 수 있으므로 최종 UX 단계에서 디자인 재검토
+
+## Admin
+
+- [x] `/admin` Dashboard scaffold 접근 정상
+- [x] 새로고침 후 SPA route 정상
+- [x] D1 미연결 상태에서 `관리자 데이터를 불러오지 못했습니다. Cloudflare D1/Access 연결 전에는 정상적인 상태입니다.` 표시 정상
+- [x] `RSVP / Guestbook / Media / Settings / System`은 현재 navigation label만 구현되어 있으며 클릭되지 않는 것이 현재 코드상 정상
+- [ ] D1 연결 이후 RSVP/Guestbook부터 실제 route/API/UI 구현
+- [ ] Media/Settings/System route 및 화면 구현
+- [ ] 모바일 Admin 강제 Dark Mode 현상 별도 QA
 
 ---
 
@@ -62,6 +89,7 @@
 - [x] `prefers-reduced-motion` 대응
 - [~] 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430 Preview/실기기 QA
 - [~] iOS Safari / Android Chrome / Samsung Internet / Kakao 인앱 브라우저 QA
+- [~] 모바일 강제 Dark Mode 대응 검토
 
 ## Phase 3 — 기본 완성 기능
 
@@ -69,7 +97,7 @@
 - [x] `.ics` 캘린더 일정 추가
 - [x] Gallery lightbox
 - [x] Gallery 이전/다음/ESC keyboard control
-- [~] 지도: 외부 카카오맵/네이버지도 + 위치 UI 완료, 실제 Kakao Map SDK embedding 미구현
+- [~] 지도: placeholder + 외부 카카오맵/네이버지도 완료, 실제 Kakao Map SDK embedding 미구현
 - [x] 주소 복사
 - [~] 계좌 accordion / 신랑·신부측 분리 / 개별 복사 완료, 실제 계좌 데이터 입력 필요
 - [x] URL 복사
@@ -176,41 +204,40 @@
 - [x] Windows `npm run build` 성공 확인
 - [x] GitHub Actions Node 24 build workflow 추가
 - [x] 최신 공개 기능 변경분 GitHub Actions CI 성공
+- [x] Cloudflare Workers GitHub build/deploy 구성
+- [x] Cloudflare Production deployment
+- [ ] feature branch Preview deployment 실제 검증
 - [ ] dependency version pinning
 - [ ] `package-lock.json` commit
-- [ ] Cloudflare Preview deployment
-- [ ] Cloudflare production deployment
 - [ ] custom domain 연결
 
 ---
 
 # 배포 이후 개발 필요사항 — 우선순위 Backlog
 
-아래 순서를 **Preview 배포 후 실제 화면과 Cloudflare 환경을 확인하면서 진행**한다.
+## P0 — 배포 직후 UI/브라우저 QA
 
-## P0 — Preview 배포 직후 반드시 확인
-
-- [ ] Cloudflare Pages에서 feature branch Preview build 성공
-- [ ] `/` 직접 접근 정상
-- [ ] `/admin` 직접 접근 및 새로고침 라우팅 정상
-- [ ] 정적 CSS/font/image 경로 정상
-- [ ] HTTPS 환경 Clipboard / Web Share 동작 확인
-- [ ] 모바일 실제 스크롤/viewport/safe-area 확인
+- [x] `/` 직접 접근 정상
+- [x] `/admin` 직접 접근 및 새로고침 라우팅 정상
+- [x] 카카오맵/네이버지도 링크 정상
+- [x] 주소 복사 정상
+- [ ] feature branch Preview build/URL 실제 검증
+- [~] 모바일 실제 스크롤/viewport/safe-area 확인 진행 중
+- [ ] 모바일 강제 Dark Mode 원인 확인 및 대응 여부 결정
 - [ ] Chrome DevTools 320/344/360/375/390/393/412/430px 확인
 - [ ] 실제 Android Chrome 확인
+- [ ] Samsung Internet Dark Mode ON/OFF 비교
 - [ ] 가능하면 iPhone Safari 확인
 - [ ] KakaoTalk 인앱 브라우저 확인
 - [ ] console error / network 404 확인
 - [ ] Lighthouse 또는 동등 수준으로 CLS/LCP/기본 접근성 확인
-
-Preview에서 발견되는 UI/반응형 문제는 다른 기능보다 우선 수정한다.
 
 ## P1 — Cloudflare 데이터 기능 연결
 
 - [ ] Preview용 D1 `wedding-db-preview` 생성
 - [ ] Production용 D1 `wedding-db-production` 생성
 - [ ] `database/schema.sql` 적용
-- [ ] Pages Functions의 `WEDDING_DB` binding
+- [ ] Worker `WEDDING_DB` D1 binding
 - [ ] Preview RSVP 활성화 후 저장/조회 테스트
 - [ ] Preview Guestbook 활성화 후 등록/조회/삭제 테스트
 - [ ] `/api/site-config` 실제 D1 설정 반영 확인
@@ -346,9 +373,6 @@ Preview에서 발견되는 UI/반응형 문제는 다른 기능보다 우선 수
 - [ ] Kakao Production domain
 - [ ] custom domain 연결
 - [ ] `noindex` 유지/해제 최종 결정
-- [ ] PR 최종 review
-- [ ] `main` merge
-- [ ] Production build 성공
 - [ ] 최종 Android/iOS/Kakao 인앱 검증
 
 ---
@@ -356,9 +380,9 @@ Preview에서 발견되는 UI/반응형 문제는 다른 기능보다 우선 수
 # 배포 이후 우선 개발 순서
 
 ```text
-Preview 배포
+Workers Production 배포
    ↓
-실제 모바일 UI/반응형 수정
+실제 모바일 UI/반응형 관찰 및 backlog 기록
    ↓
 D1 연결 + RSVP/Guestbook 실데이터 검증
    ↓
@@ -377,8 +401,6 @@ R2 Media 관리
 Kakao Share / OG
    ↓
 Backup / Security / 실기기 QA
-   ↓
-main merge + Production
 ```
 
 이 순서는 특별한 blocker가 없는 한 이후 개발의 기준 순서로 사용한다.
@@ -387,13 +409,11 @@ main merge + Production
 
 # 현재 외부 정보/설정이 필요한 항목
 
-아래 항목은 코드만으로 최종 완료할 수 없다.
-
 1. 실제 웨딩 사진
 2. 신랑/신부 및 필요 시 혼주 전화번호
 3. 계좌 정보
 4. BGM 파일 및 공개 사용 권리
-5. Cloudflare 계정에서 D1/R2/Pages/Access 설정
+5. Cloudflare 계정에서 D1/R2/Access 설정
 6. Turnstile Site Key / Secret Key
 7. Kakao Developers JavaScript Key 및 최종 production domain
 8. 최종 custom domain
@@ -402,6 +422,8 @@ main merge + Production
 
 # 현재 결론
 
-**코드 기능 추가는 여기서 일시적으로 멈추고 Cloudflare Preview 배포를 먼저 수행한다.**
+**Cloudflare Workers 1차 Production 배포는 완료되었다.**
 
-Preview 환경에서 실제 모바일 화면, route, HTTPS browser API, Pages Functions 동작을 확인한 뒤 위 P0 → P10 backlog 순서로 수정·완성한다.
+현재 확인된 모바일 강제 Dark Mode 가능성, 지도 placeholder, Admin navigation 미구현 상태는 backlog에 기록했으며 지금은 코드를 수정하지 않는다.
+
+다음 단계는 **D1 데이터베이스 생성 → `WEDDING_DB` binding → `database/schema.sql` 적용 → RSVP/Guestbook 실데이터 검증**이다.
