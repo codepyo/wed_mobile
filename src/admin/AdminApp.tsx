@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 type DashboardData = {
   rsvp?: {
@@ -35,7 +35,15 @@ type GuestbookItem = {
   created_at: string;
 };
 
-type View = 'dashboard' | 'rsvp' | 'guestbook';
+type SettingsData = {
+  rsvpEnabled: boolean;
+  rsvpDeadline: string;
+  guestbookEnabled: boolean;
+  guestbookWriteEnabled: boolean;
+  musicEnabled: boolean;
+};
+
+type View = 'dashboard' | 'rsvp' | 'guestbook' | 'settings';
 
 const number = (value?: number) => Number(value ?? 0).toLocaleString('ko-KR');
 const sideLabel = (value?: string | null) => value === 'GROOM' ? '신랑측' : value === 'BRIDE' ? '신부측' : '-';
@@ -48,13 +56,24 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+function toLocalDateTimeValue(value: string) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default function AdminApp() {
   const [view, setView] = useState<View>('dashboard');
   const [data, setData] = useState<DashboardData | null>(null);
   const [rsvpItems, setRsvpItems] = useState<RsvpItem[]>([]);
   const [guestbookItems, setGuestbookItems] = useState<GuestbookItem[]>([]);
+  const [settings, setSettings] = useState<SettingsData | null>(null);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
 
   const loadDashboard = async () => {
@@ -76,13 +95,20 @@ export default function AdminApp() {
     setGuestbookItems(payload.items || []);
   };
 
+  const loadSettings = async () => {
+    const payload = await api<SettingsData>('/api/admin/settings');
+    setSettings(payload);
+  };
+
   const load = async () => {
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       if (view === 'dashboard') await loadDashboard();
       if (view === 'rsvp') await loadRsvp();
       if (view === 'guestbook') await loadGuestbook();
+      if (view === 'settings') await loadSettings();
     } catch {
       setError('관리자 데이터를 불러오지 못했습니다. Cloudflare Access와 D1 연결 상태를 확인해 주세요.');
     } finally {
@@ -92,17 +118,15 @@ export default function AdminApp() {
 
   useEffect(() => { void load(); }, [view]);
 
-  const title = view === 'dashboard' ? '결혼식 운영 현황' : view === 'rsvp' ? 'RSVP 응답 관리' : '방명록 관리';
-  const eyebrow = view === 'dashboard' ? 'OVERVIEW' : view === 'rsvp' ? 'RSVP' : 'GUESTBOOK';
-
+  const title = view === 'dashboard' ? '결혼식 운영 현황' : view === 'rsvp' ? 'RSVP 응답 관리' : view === 'guestbook' ? '방명록 관리' : '공개 기능 설정';
+  const eyebrow = view === 'dashboard' ? 'OVERVIEW' : view === 'rsvp' ? 'RSVP' : view === 'guestbook' ? 'GUESTBOOK' : 'SETTINGS';
   const attendingPeople = useMemo(() => rsvpItems.reduce((sum, item) => sum + (item.attendance === 'YES' ? Number(item.guest_count || 0) : 0), 0), [rsvpItems]);
 
   const rsvpDelete = async (item: RsvpItem) => {
     if (!window.confirm(`${item.name}님의 RSVP 응답을 삭제할까요?`)) return;
     try {
       await api('/api/admin/rsvp', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json; charset=utf-8' },
+        method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ id: item.id, action: 'DELETE' }),
       });
       await Promise.all([loadRsvp(), loadDashboard()]);
@@ -115,13 +139,44 @@ export default function AdminApp() {
     if (action === 'DELETE' && !window.confirm(`${item.name}님의 방명록을 삭제할까요?`)) return;
     try {
       await api('/api/admin/guestbook', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json; charset=utf-8' },
+        method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ id: item.id, action }),
       });
       await Promise.all([loadGuestbook(), loadDashboard()]);
     } catch {
       setError('방명록 상태를 변경하지 못했습니다.');
+    }
+  };
+
+  const saveSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!settings || saving) return;
+    setSaving(true);
+    setError('');
+    setNotice('');
+    const form = new FormData(event.currentTarget);
+    const deadline = String(form.get('rsvpDeadline') || '').trim();
+    try {
+      const payload = await api<SettingsData>('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          updates: {
+            rsvp_enabled: form.get('rsvpEnabled') === 'on',
+            rsvp_deadline: deadline ? new Date(deadline).toISOString() : '',
+            guestbook_enabled: form.get('guestbookEnabled') === 'on',
+            guestbook_write_enabled: form.get('guestbookWriteEnabled') === 'on',
+            music_enabled: form.get('musicEnabled') === 'on',
+          },
+        }),
+      });
+      setSettings(payload);
+      setNotice('설정을 저장했습니다. 공개 청첩장에 즉시 반영됩니다.');
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error && err.message === 'INVALID_RSVP_DEADLINE' ? 'RSVP 마감일 형식을 확인해 주세요.' : '설정을 저장하지 못했습니다.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -151,19 +206,22 @@ export default function AdminApp() {
           <button className={view === 'dashboard' ? 'is-active' : ''} onClick={() => setView('dashboard')}>Dashboard</button>
           <button className={view === 'rsvp' ? 'is-active' : ''} onClick={() => setView('rsvp')}>RSVP</button>
           <button className={view === 'guestbook' ? 'is-active' : ''} onClick={() => setView('guestbook')}>Guestbook</button>
-          <span>Media</span><span>Settings</span><span>System</span>
+          <span>Media</span>
+          <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>Settings</button>
+          <span>System</span>
         </aside>
         <main className="admin-main">
           <section className="admin-page-title">
             <div><small>{eyebrow}</small><h2>{title}</h2></div>
             <div className="admin-page-actions">
-              {view !== 'dashboard' && <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void load(); }} placeholder="이름/메시지 검색" />}
+              {(view === 'rsvp' || view === 'guestbook') && <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void load(); }} placeholder="이름/메시지 검색" />}
               {view === 'rsvp' && <button type="button" onClick={exportRsvpCsv} disabled={!rsvpItems.length}>CSV 내보내기</button>}
               <button type="button" onClick={() => void load()} disabled={loading}>{loading ? '불러오는 중' : '새로고침'}</button>
             </div>
           </section>
 
           {error && <div className="admin-alert">{error}</div>}
+          {notice && <div className="admin-alert admin-alert--success">{notice}</div>}
 
           {view === 'dashboard' && <>
             <section className="admin-kpis" aria-label="참석 현황 요약">
@@ -180,20 +238,28 @@ export default function AdminApp() {
           </>}
 
           {view === 'rsvp' && <>
-            <section className="admin-kpis admin-kpis--compact">
-              <article><small>조회 응답</small><strong>{number(rsvpItems.length)}</strong><span>건</span></article>
-              <article><small>조회 참석 인원</small><strong>{number(attendingPeople)}</strong><span>명</span></article>
-            </section>
-            <section className="admin-panel admin-table-panel">
-              <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>참석</th><th>인원</th><th>식사</th><th>전달사항</th><th>등록일</th><th></th></tr></thead><tbody>{rsvpItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td>{item.attendance === 'YES' ? '참석' : '불참'}</td><td>{item.attendance === 'YES' ? `${item.guest_count || 0}명` : '-'}</td><td>{item.meal === 'YES' ? '예정' : item.meal === 'NO' ? '안 함' : item.meal === 'UNKNOWN' ? '미정' : '-'}</td><td className="admin-table__message">{item.message || '-'}</td><td>{dateLabel(item.created_at)}</td><td><button className="admin-danger" onClick={() => void rsvpDelete(item)}>삭제</button></td></tr>)}</tbody></table></div>
-              {!rsvpItems.length && <p className="admin-empty">조회된 RSVP 응답이 없습니다.</p>}
-            </section>
+            <section className="admin-kpis admin-kpis--compact"><article><small>조회 응답</small><strong>{number(rsvpItems.length)}</strong><span>건</span></article><article><small>조회 참석 인원</small><strong>{number(attendingPeople)}</strong><span>명</span></article></section>
+            <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>참석</th><th>인원</th><th>식사</th><th>전달사항</th><th>등록일</th><th></th></tr></thead><tbody>{rsvpItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td>{item.attendance === 'YES' ? '참석' : '불참'}</td><td>{item.attendance === 'YES' ? `${item.guest_count || 0}명` : '-'}</td><td>{item.meal === 'YES' ? '예정' : item.meal === 'NO' ? '안 함' : item.meal === 'UNKNOWN' ? '미정' : '-'}</td><td className="admin-table__message">{item.message || '-'}</td><td>{dateLabel(item.created_at)}</td><td><button className="admin-danger" onClick={() => void rsvpDelete(item)}>삭제</button></td></tr>)}</tbody></table></div>{!rsvpItems.length && <p className="admin-empty">조회된 RSVP 응답이 없습니다.</p>}</section>
           </>}
 
-          {view === 'guestbook' && <section className="admin-panel admin-table-panel">
-            <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>메시지</th><th>상태</th><th>등록일</th><th></th></tr></thead><tbody>{guestbookItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td className="admin-table__message">{item.message}</td><td>{item.visible ? '공개' : '숨김'}</td><td>{dateLabel(item.created_at)}</td><td><div className="admin-row-actions"><button onClick={() => void guestbookAction(item, item.visible ? 'HIDE' : 'SHOW')}>{item.visible ? '숨김' : '공개'}</button><button className="admin-danger" onClick={() => void guestbookAction(item, 'DELETE')}>삭제</button></div></td></tr>)}</tbody></table></div>
-            {!guestbookItems.length && <p className="admin-empty">조회된 방명록이 없습니다.</p>}
-          </section>}
+          {view === 'guestbook' && <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>메시지</th><th>상태</th><th>등록일</th><th></th></tr></thead><tbody>{guestbookItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td className="admin-table__message">{item.message}</td><td>{item.visible ? '공개' : '숨김'}</td><td>{dateLabel(item.created_at)}</td><td><div className="admin-row-actions"><button onClick={() => void guestbookAction(item, item.visible ? 'HIDE' : 'SHOW')}>{item.visible ? '숨김' : '공개'}</button><button className="admin-danger" onClick={() => void guestbookAction(item, 'DELETE')}>삭제</button></div></td></tr>)}</tbody></table></div>{!guestbookItems.length && <p className="admin-empty">조회된 방명록이 없습니다.</p>}</section>}
+
+          {view === 'settings' && settings && <form className="admin-settings" onSubmit={saveSettings}>
+            <section className="admin-panel">
+              <div className="admin-panel__head"><div><small>PUBLIC FEATURES</small><h3>공개 기능 제어</h3></div></div>
+              <div className="admin-setting-list">
+                <label className="admin-toggle"><div><strong>RSVP 사용</strong><span>공개 청첩장에서 참석 여부 폼을 활성화합니다.</span></div><input type="checkbox" name="rsvpEnabled" checked={settings.rsvpEnabled} onChange={(event) => setSettings({ ...settings, rsvpEnabled: event.target.checked })} /></label>
+                <label className="admin-toggle"><div><strong>방명록 사용</strong><span>공개 청첩장에서 방명록 섹션을 활성화합니다.</span></div><input type="checkbox" name="guestbookEnabled" checked={settings.guestbookEnabled} onChange={(event) => setSettings({ ...settings, guestbookEnabled: event.target.checked })} /></label>
+                <label className="admin-toggle"><div><strong>방명록 신규 작성</strong><span>기존 글은 유지하고 신규 등록만 닫을 수 있습니다.</span></div><input type="checkbox" name="guestbookWriteEnabled" checked={settings.guestbookWriteEnabled} disabled={!settings.guestbookEnabled} onChange={(event) => setSettings({ ...settings, guestbookWriteEnabled: event.target.checked })} /></label>
+                <label className="admin-toggle"><div><strong>BGM 사용</strong><span>실제 음원이 연결된 이후 공개 BGM 사용 여부를 제어합니다.</span></div><input type="checkbox" name="musicEnabled" checked={settings.musicEnabled} onChange={(event) => setSettings({ ...settings, musicEnabled: event.target.checked })} /></label>
+              </div>
+            </section>
+            <section className="admin-panel">
+              <div className="admin-panel__head"><div><small>RSVP DEADLINE</small><h3>RSVP 마감일</h3></div></div>
+              <label className="admin-field"><span>마감 일시</span><input type="datetime-local" name="rsvpDeadline" value={toLocalDateTimeValue(settings.rsvpDeadline)} onChange={(event) => setSettings({ ...settings, rsvpDeadline: event.target.value ? new Date(event.target.value).toISOString() : '' })} /><small>비워두면 마감일을 사용하지 않습니다.</small></label>
+            </section>
+            <div className="admin-settings-actions"><button type="submit" disabled={saving}>{saving ? '저장 중…' : '설정 저장'}</button></div>
+          </form>}
         </main>
       </div>
     </div>
