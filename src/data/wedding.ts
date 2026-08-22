@@ -143,8 +143,8 @@ export const wedding = {
   features: {
     contacts: false,
     accounts: false,
-    rsvp: false,
-    guestbook: false,
+    rsvp: true,
+    guestbook: true,
     music: false,
   },
 };
