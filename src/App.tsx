@@ -10,7 +10,9 @@ import {
   LocationSection,
 } from './components/Sections';
 import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
+import { MusicControl } from './components/MusicControl';
 import { wedding } from './data/wedding';
+import { shareToKakao } from './utils/share';
 
 function getDdayLabel() {
   const target = new Date(wedding.ceremony.isoDate).getTime();
@@ -57,11 +59,7 @@ function App() {
   };
 
   const shareInvitation = async () => {
-    const shareData = {
-      title: `${wedding.couple.groom.name} & ${wedding.couple.bride.name}, 결혼합니다`,
-      text: `${wedding.ceremony.year}년 ${wedding.ceremony.month}월 ${wedding.ceremony.day}일 ${wedding.ceremony.weekday} ${wedding.ceremony.time} · ${wedding.ceremony.venue} ${wedding.ceremony.floor}`,
-      url: window.location.href,
-    };
+    const shareData = { title: wedding.share.title, text: wedding.share.description, url: window.location.href };
     try {
       if (navigator.share) {
         await navigator.share(shareData);
@@ -74,6 +72,15 @@ function App() {
     }
   };
 
+  const kakaoShare = async () => {
+    try {
+      const shared = await shareToKakao();
+      if (!shared) await shareInvitation();
+    } catch {
+      await shareInvitation();
+    }
+  };
+
   return (
     <main className="invitation-shell">
       <HeroSection />
@@ -83,9 +90,10 @@ function App() {
       <GallerySection />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
       <RsvpSection />
-      <AccountSection />
+      <AccountSection onCopyText={copyText} />
       <GuestbookSection />
-      <ClosingSection onShare={shareInvitation} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
+      <ClosingSection onShare={shareInvitation} onKakaoShare={kakaoShare} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
+      <MusicControl />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
   );
