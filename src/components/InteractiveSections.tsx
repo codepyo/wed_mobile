@@ -16,6 +16,7 @@ type SiteConfig = {
   rsvpDeadline: string;
   guestbookEnabled: boolean;
   guestbookWriteEnabled: boolean;
+  turnstileEnabled: boolean;
 };
 
 const defaultConfig: SiteConfig = {
@@ -23,11 +24,12 @@ const defaultConfig: SiteConfig = {
   rsvpDeadline: wedding.rsvp.fallbackDeadline,
   guestbookEnabled: true,
   guestbookWriteEnabled: true,
+  turnstileEnabled: false,
 };
 
 async function getSiteConfig(): Promise<SiteConfig> {
   try {
-    const response = await fetch('/api/site-config', { headers: { accept: 'application/json' } });
+    const response = await fetch('/api/site-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
     if (!response.ok) return defaultConfig;
     const data = await response.json();
     return {
@@ -35,6 +37,7 @@ async function getSiteConfig(): Promise<SiteConfig> {
       rsvpDeadline: String(data.rsvpDeadline || wedding.rsvp.fallbackDeadline || ''),
       guestbookEnabled: data.guestbookEnabled !== false,
       guestbookWriteEnabled: data.guestbookWriteEnabled !== false,
+      turnstileEnabled: data.turnstileEnabled === true,
     };
   } catch {
     return defaultConfig;
@@ -59,6 +62,7 @@ export function RsvpSection() {
   }, []);
 
   const closed = !config.rsvpEnabled || isDeadlinePassed(config.rsvpDeadline);
+  const securityPending = config.turnstileEnabled && !turnstileToken;
   const deadlineText = useMemo(() => {
     if (!config.rsvpDeadline) return '';
     const date = new Date(config.rsvpDeadline);
@@ -71,6 +75,11 @@ export function RsvpSection() {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting || closed) return;
+    if (securityPending) {
+      setStatus('보안 확인이 완료된 후 제출해 주세요.');
+      return;
+    }
+
     setSubmitting(true);
     setStatus('');
     const form = new FormData(event.currentTarget);
@@ -84,18 +93,31 @@ export function RsvpSection() {
       message: form.get('message'),
       turnstileToken,
     };
+
     try {
-      const response = await fetch('/api/rsvp', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      const response = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (data.error === 'RSVP_DEADLINE_PASSED' || data.error === 'RSVP_CLOSED') setConfig((current) => ({ ...current, rsvpEnabled: false }));
+        if (data.error === 'RSVP_DEADLINE_PASSED' || data.error === 'RSVP_CLOSED') {
+          setConfig((current) => ({ ...current, rsvpEnabled: false }));
+        }
         throw new Error(String(data.error || 'submit failed'));
       }
       event.currentTarget.reset();
       setStatus('참석 여부가 전달되었습니다. 감사합니다.');
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
-      setStatus(code === 'TURNSTILE_FAILED' ? '보안 확인이 만료되었습니다. 다시 확인 후 제출해 주세요.' : closed ? '참석 여부 전달이 마감되었습니다.' : '전달하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setStatus(
+        code === 'TURNSTILE_FAILED'
+          ? '보안 확인에 실패했습니다. 잠시 후 다시 확인하고 제출해 주세요.'
+          : closed
+            ? '참석 여부 전달이 마감되었습니다.'
+            : '전달하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      );
     } finally {
       setSubmitting(false);
       setTurnstileReset((value) => value + 1);
@@ -117,7 +139,9 @@ export function RsvpSection() {
           <label><span>식사 여부</span><select name="meal" defaultValue="UNKNOWN"><option value="YES">식사 예정</option><option value="UNKNOWN">미정</option><option value="NO">식사 안 함</option></select></label>
           <label><span>전달사항 <small>선택</small></span><textarea name="message" maxLength={500} rows={3} /></label>
           <TurnstileWidget action="rsvp" onToken={setTurnstileToken} resetKey={turnstileReset} />
-          <button type="submit" className="form-submit" disabled={submitting}>{submitting ? '전달 중…' : '참석 여부 전달하기'}</button>
+          <button type="submit" className="form-submit" disabled={submitting || securityPending}>
+            {submitting ? '전달 중…' : securityPending ? '보안 확인 중…' : '참석 여부 전달하기'}
+          </button>
           {status && <p className="form-status" role="status">{status}</p>}
         </form>
       )}
@@ -133,6 +157,7 @@ export function GuestbookSection() {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileReset, setTurnstileReset] = useState(0);
   const enabled = wedding.features.guestbook;
+  const securityPending = config.turnstileEnabled && !turnstileToken;
 
   const load = useCallback(async () => {
     try {
@@ -156,15 +181,33 @@ export function GuestbookSection() {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting || !config.guestbookWriteEnabled) return;
+    if (securityPending) {
+      setStatus('보안 확인이 완료된 후 등록해 주세요.');
+      return;
+    }
+
     setSubmitting(true);
     setStatus('');
     const form = new FormData(event.currentTarget);
-    const payload = { name: form.get('name'), side: form.get('side'), message: form.get('message'), deletePassword: form.get('deletePassword'), turnstileToken };
+    const payload = {
+      name: form.get('name'),
+      side: form.get('side'),
+      message: form.get('message'),
+      deletePassword: form.get('deletePassword'),
+      turnstileToken,
+    };
+
     try {
-      const response = await fetch('/api/guestbook', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      const response = await fetch('/api/guestbook', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (data.error === 'GUESTBOOK_CLOSED') setConfig((current) => ({ ...current, guestbookWriteEnabled: false }));
+        if (data.error === 'GUESTBOOK_CLOSED') {
+          setConfig((current) => ({ ...current, guestbookWriteEnabled: false }));
+        }
         throw new Error(String(data.error || 'submit failed'));
       }
       event.currentTarget.reset();
@@ -172,7 +215,11 @@ export function GuestbookSection() {
       await load();
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
-      setStatus(code === 'TURNSTILE_FAILED' ? '보안 확인이 만료되었습니다. 다시 확인 후 등록해 주세요.' : '메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setStatus(
+        code === 'TURNSTILE_FAILED'
+          ? '보안 확인에 실패했습니다. 잠시 후 다시 확인하고 등록해 주세요.'
+          : '메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      );
     } finally {
       setSubmitting(false);
       setTurnstileReset((value) => value + 1);
@@ -183,7 +230,11 @@ export function GuestbookSection() {
     const deletePassword = window.prompt(`${item.name}님의 메시지를 삭제하려면 등록할 때 입력한 삭제 비밀번호를 입력해 주세요.`);
     if (!deletePassword) return;
     try {
-      const response = await fetch(`/api/guestbook/${encodeURIComponent(item.id)}/delete`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ deletePassword }) });
+      const response = await fetch(`/api/guestbook/${encodeURIComponent(item.id)}/delete`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ deletePassword }),
+      });
       if (!response.ok) throw new Error('delete failed');
       setStatus('메시지가 삭제되었습니다.');
       await load();
@@ -203,7 +254,9 @@ export function GuestbookSection() {
           <label><span>축하 메시지</span><textarea name="message" required maxLength={300} rows={4} /></label>
           <label><span>삭제 비밀번호</span><input name="deletePassword" required minLength={4} maxLength={30} type="password" inputMode="numeric" /></label>
           <TurnstileWidget action="guestbook" onToken={setTurnstileToken} resetKey={turnstileReset} />
-          <button type="submit" className="form-submit" disabled={submitting}>{submitting ? '등록 중…' : '메시지 남기기'}</button>
+          <button type="submit" className="form-submit" disabled={submitting || securityPending}>
+            {submitting ? '등록 중…' : securityPending ? '보안 확인 중…' : '메시지 남기기'}
+          </button>
           {status && <p className="form-status" role="status">{status}</p>}
         </form>
       ) : <div className="form-closed"><strong>새로운 방명록 등록이 마감되었습니다.</strong><p>남겨주신 축하 메시지는 계속 볼 수 있습니다.</p></div>}
