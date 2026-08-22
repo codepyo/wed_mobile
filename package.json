@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:cloudflare": "npm run build && wrangler pages functions build --outdir=.worker",
     "preview": "vite preview",
     "typecheck": "tsc -b"
   },
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "wrangler": "latest"
   }
 }
