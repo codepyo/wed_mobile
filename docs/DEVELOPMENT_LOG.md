@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능까지 실제 환경 검증 완료.
+Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings까지 실제 환경 검증 완료.
 
 Production: `https://wed-mobile.robin5544.workers.dev`
 
@@ -77,8 +77,28 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] Guestbook hide/show
 - [x] Guestbook 삭제
 - [x] Admin mutation audit log 기록
-- [x] 모바일 Admin table 가로 스크롤 대응
 - [x] 실제 Production CRUD/Admin UI 동작 확인
+
+### Admin Settings / Operations
+
+- [x] RSVP ON/OFF
+- [x] RSVP 마감 일시 설정
+- [x] Guestbook 전체 ON/OFF
+- [x] Guestbook 신규 작성 ON/OFF
+- [x] BGM ON/OFF
+- [x] D1 `site_settings` 즉시 반영
+- [x] 설정 변경 `SETTINGS_UPDATE` audit log 기록
+- [x] Dashboard 최근 관리자 작업 반영 확인
+- [x] 실제 Production 저장/조회 동작 검증
+
+### 2026-08-22 — Admin 모바일 테이블 overflow 이슈
+
+- [x] Chrome DevTools 모바일 device frame에서 Admin RSVP/Guestbook 진입 시 페이지 전체가 viewport보다 가로로 확장되는 현상 확인
+- 원인: RSVP/Guestbook 테이블이 `min-width: 860px`를 사용하고 있으며, CSS Grid/Flex 자식의 기본 `min-width:auto` 때문에 table wrapper 내부 스크롤로 제한되지 않고 상위 layout의 최소 너비를 밀어냄
+- [x] 수정 방향: `.admin-layout`, `.admin-main`, `.admin-panel`, `.admin-table-panel`, `.admin-table-wrap` 등에 `min-width:0` / `max-width:100%` 적용
+- [x] 모바일에서는 table 자체의 860px 최소 너비는 유지하되 `.admin-table-wrap`에서만 가로 스크롤하도록 containment 적용
+- [x] `.admin-shell`의 비의도적 페이지 전체 horizontal overflow 방지
+- [~] Production 배포 후 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 재검증 필요
 
 ### 확인된 Backlog
 
@@ -95,15 +115,17 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ## 다음 개발
 
-### Admin Settings / Operations
+### R2 Media 관리
 
-관리자에서 D1 `site_settings`를 직접 제어한다.
+관리자에서 실제 사진/공유 이미지/BGM을 교체할 수 있도록 Cloudflare R2 기반 media layer를 구축한다.
 
-- [ ] RSVP ON/OFF
-- [ ] RSVP 마감일
-- [ ] Guestbook 전체 ON/OFF
-- [ ] Guestbook 신규 작성 ON/OFF
-- [ ] BGM ON/OFF
-- [ ] 변경 사항 audit log
+1. R2 Production/Preview bucket 설계 및 binding
+2. `media_assets`와 R2 object key 연결
+3. Admin Media 목록/현재 상태 조회 API
+4. 업로드 API의 MIME/크기/종류 validation
+5. Hero/Gallery/OG/BGM 업로드 및 교체
+6. Gallery 순서 및 focal point 관리
+7. 기존 object의 안전한 비활성/교체 정책
+8. 변경 audit log
 
-완료 후 다음 우선순위는 R2 Media 관리 또는 실제 콘텐츠 입력으로 진행한다.
+R2 binding 전에도 코드 레벨의 API/UI 기반과 object-key 정책부터 구현 가능하다.
