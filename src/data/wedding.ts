@@ -5,6 +5,13 @@ export type TransportItem = {
   lines: string[];
 };
 
+export type WeddingImage = {
+  src: string;
+  alt: string;
+  ratio: string;
+  position: string;
+};
+
 export const wedding = {
   couple: {
     groom: {
@@ -13,6 +20,7 @@ export const wedding = {
       father: '홍상민',
       mother: '정미경',
       relation: '아들',
+      phone: '',
     },
     bride: {
       name: '제희',
@@ -20,6 +28,7 @@ export const wedding = {
       father: '이현규',
       mother: '장대선',
       relation: '딸',
+      phone: '',
     },
   },
   invitation: [
@@ -45,8 +54,20 @@ export const wedding = {
     longitude: 127.0324282,
   },
   images: {
-    hero: '',
-    gallery: ['', '', '', '', '', ''],
+    hero: {
+      src: '',
+      alt: '승표와 제희의 대표 웨딩 사진',
+      ratio: '4 / 5',
+      position: '50% 38%',
+    } satisfies WeddingImage,
+    gallery: [
+      { src: '', alt: '승표와 제희의 웨딩 사진 1', ratio: '4 / 5', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 2', ratio: '3 / 2', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 3', ratio: '1 / 1', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 4', ratio: '3 / 4', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 5', ratio: '3 / 2', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 6', ratio: '4 / 5', position: '50% 50%' },
+    ] satisfies WeddingImage[],
     og: '',
   },
   mapLinks: {
@@ -56,13 +77,13 @@ export const wedding = {
   transport: [
     {
       key: 'car',
-      label: 'CAR',
+      label: 'BY CAR',
       title: '자가용',
       lines: ['라마다프라자수원호텔 주차장 이용 가능', '도착 후 호텔 주차 안내에 따라 입차해 주세요.'],
     },
     {
       key: 'station',
-      label: 'TRAIN / TAXI',
+      label: 'SUWON STATION',
       title: '수원역 · 택시',
       lines: [
         'KTX 수원역 4번 출구 하차 후 버스 환승',
@@ -72,7 +93,7 @@ export const wedding = {
     },
     {
       key: 'bus',
-      label: 'BUS',
+      label: 'EXPRESS BUS',
       title: '광역버스',
       lines: [
         '잠실역 1007-1 · 사당역 7000, 7001 · 강남역 3007',
@@ -80,6 +101,14 @@ export const wedding = {
       ],
     },
   ] satisfies TransportItem[],
+  accounts: {
+    groom: [],
+    bride: [],
+  },
+  music: {
+    src: '',
+    title: '',
+  },
   features: {
     contacts: false,
     accounts: false,
