@@ -6,12 +6,32 @@
 - `docs/ADMIN_CONSOLE_PLAN.md`
 
 최종 업데이트: 2026-08-22
+현재 단계: **1차 개발 완료 / Cloudflare Preview 배포 직전 체크포인트**
 
 표기:
 
 - `[x]` 코드 구현 완료
 - `[~]` 코드 기반 구현 완료, 실제 데이터/Cloudflare 설정 또는 실기기 검증 필요
-- `[ ]` 미구현
+- `[ ]` 미구현 / 배포 이후 개발 예정
+
+---
+
+# 0. 배포 전 체크포인트
+
+현재 브랜치 `feat/initial-wedding-invitation`은 로컬 Windows 환경에서 `npm run build` 성공이 확인되었고, GitHub Actions Node 24 CI도 최신 공개 기능 변경분까지 성공했다.
+
+이번 시점부터는 기능을 더 많이 추가하기보다 **현재 상태를 Cloudflare Preview로 먼저 배포하여 실제 모바일 브라우저/네트워크/Cloudflare Functions 환경에서 검증한 뒤 다음 개발을 진행한다.**
+
+배포 전 의도적으로 비활성 상태로 유지하는 기능:
+
+- RSVP: Cloudflare D1 연결 전 `false`
+- Guestbook: Cloudflare D1 연결 전 `false`
+- Contact: 실제 전화번호 입력 전 숨김
+- Account: 실제 계좌정보 입력 전 숨김
+- BGM: 실제 음원 입력 전 숨김
+- Kakao Share: JavaScript Key/등록 도메인/대표 이미지가 없으면 Native Share 또는 URL 복사 fallback
+
+즉 첫 Preview 배포의 목적은 **공개 청첩장 UI/UX/반응형/라우팅/정적 자산/Cloudflare 빌드 환경 검증**이며, 실제 데이터 저장 기능은 D1 binding 이후 순차 활성화한다.
 
 ---
 
@@ -40,8 +60,8 @@
 - [x] form input 16px 적용
 - [x] `svh` / `dvh` 사용
 - [x] `prefers-reduced-motion` 대응
-- [~] 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430 실기기/DevTools QA
-- [~] iOS Safari / Samsung Internet / Kakao 인앱 브라우저 QA
+- [~] 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430 Preview/실기기 QA
+- [~] iOS Safari / Android Chrome / Samsung Internet / Kakao 인앱 브라우저 QA
 
 ## Phase 3 — 기본 완성 기능
 
@@ -98,7 +118,7 @@
 
 ## Admin Phase B — Authentication
 
-- [ ] Cloudflare Access 설치/설정
+- [ ] Cloudflare Access 설정
 - [ ] `/admin*` 보호
 - [ ] `/api/admin/*` 보호
 - [ ] 관리자 이메일 allow policy
@@ -136,7 +156,7 @@
 
 ## Admin Phase F — Settings / Operations
 
-- [ ] Feature toggle
+- [ ] Feature toggle Admin UI
 - [ ] RSVP deadline Admin UI
 - [ ] Guestbook write toggle Admin UI
 - [x] readiness UI 기반
@@ -158,11 +178,214 @@
 - [x] 최신 공개 기능 변경분 GitHub Actions CI 성공
 - [ ] dependency version pinning
 - [ ] `package-lock.json` commit
-- [ ] Cloudflare preview deployment
+- [ ] Cloudflare Preview deployment
+- [ ] Cloudflare production deployment
+- [ ] custom domain 연결
 
 ---
 
-## 현재 외부 정보/설정이 필요한 항목
+# 배포 이후 개발 필요사항 — 우선순위 Backlog
+
+아래 순서를 **Preview 배포 후 실제 화면과 Cloudflare 환경을 확인하면서 진행**한다.
+
+## P0 — Preview 배포 직후 반드시 확인
+
+- [ ] Cloudflare Pages에서 feature branch Preview build 성공
+- [ ] `/` 직접 접근 정상
+- [ ] `/admin` 직접 접근 및 새로고침 라우팅 정상
+- [ ] 정적 CSS/font/image 경로 정상
+- [ ] HTTPS 환경 Clipboard / Web Share 동작 확인
+- [ ] 모바일 실제 스크롤/viewport/safe-area 확인
+- [ ] Chrome DevTools 320/344/360/375/390/393/412/430px 확인
+- [ ] 실제 Android Chrome 확인
+- [ ] 가능하면 iPhone Safari 확인
+- [ ] KakaoTalk 인앱 브라우저 확인
+- [ ] console error / network 404 확인
+- [ ] Lighthouse 또는 동등 수준으로 CLS/LCP/기본 접근성 확인
+
+Preview에서 발견되는 UI/반응형 문제는 다른 기능보다 우선 수정한다.
+
+## P1 — Cloudflare 데이터 기능 연결
+
+- [ ] Preview용 D1 `wedding-db-preview` 생성
+- [ ] Production용 D1 `wedding-db-production` 생성
+- [ ] `database/schema.sql` 적용
+- [ ] Pages Functions의 `WEDDING_DB` binding
+- [ ] Preview RSVP 활성화 후 저장/조회 테스트
+- [ ] Preview Guestbook 활성화 후 등록/조회/삭제 테스트
+- [ ] `/api/site-config` 실제 D1 설정 반영 확인
+- [ ] RSVP deadline 실제 테스트
+- [ ] DB 오류 시 공개 청첩장 graceful degradation 확인
+
+## P2 — 보안 / Bot 방지
+
+- [ ] Cloudflare Turnstile widget 생성
+- [ ] `VITE_TURNSTILE_SITE_KEY` 설정
+- [ ] `TURNSTILE_SECRET_KEY` 설정
+- [ ] RSVP Siteverify 테스트
+- [ ] Guestbook Siteverify 테스트
+- [ ] 잘못된/만료된 token 차단 확인
+- [ ] 반복 submit / abuse 기본 대응 확인
+
+## P3 — 관리자 핵심 데이터 관리
+
+### RSVP
+
+- [ ] `/admin/rsvp` 목록
+- [ ] pagination / cursor
+- [ ] 이름 검색
+- [ ] 신랑측/신부측 필터
+- [ ] 참석/불참 필터
+- [ ] 식사 필터
+- [ ] 상세 조회
+- [ ] 수정
+- [ ] soft delete
+- [ ] restore
+- [ ] 동일 이름 중복 가능성 표시
+- [ ] UTF-8 BOM CSV export
+- [ ] 현재 필터 CSV export
+
+### Guestbook
+
+- [ ] `/admin/guestbook` 목록
+- [ ] 검색
+- [ ] 공개/숨김 필터
+- [ ] hide/show
+- [ ] soft delete
+- [ ] restore
+- [ ] CSV export
+
+## P4 — 관리자 인증
+
+- [ ] Cloudflare Access Application 생성
+- [ ] `/admin*` 보호
+- [ ] `/api/admin/*` 보호
+- [ ] 허용 관리자 이메일 등록
+- [ ] 관리자 인증 header/server 검증
+- [ ] 로그인하지 않은 브라우저에서 admin API 직접 호출 차단
+- [ ] Access bypass/security QA
+
+관리자 기능을 실제 개인정보 운영에 사용하기 전 P4는 반드시 완료한다.
+
+## P5 — Admin Settings / Audit / Operations
+
+- [ ] RSVP ON/OFF
+- [ ] RSVP 마감일 변경
+- [ ] Guestbook 전체 ON/OFF
+- [ ] Guestbook 신규 작성 ON/OFF
+- [ ] BGM ON/OFF
+- [ ] 설정 변경 Audit Log
+- [ ] RSVP 수정/삭제/복원 Audit Log
+- [ ] Guestbook hide/delete/restore Audit Log
+- [ ] 최근 활동 실제 데이터 연결
+- [ ] System Status API/UI
+- [ ] 배포 준비상태 실제 config 기반 계산
+
+## P6 — R2 Media 관리
+
+- [ ] R2 Preview/Production bucket 또는 prefix 설계
+- [ ] R2 binding
+- [ ] Hero 업로드/교체
+- [ ] Gallery 업로드/교체
+- [ ] Gallery 순서 변경
+- [ ] 사진 focal point editor
+- [ ] OG 이미지 교체
+- [ ] BGM 업로드/교체
+- [ ] MIME / 파일 크기 validation
+- [ ] cache busting/versioned object key
+- [ ] 기존 파일 안전한 비활성/삭제 정책
+
+## P7 — 실제 콘텐츠 입력
+
+- [ ] Hero 실제 사진
+- [ ] Gallery 실제 사진
+- [ ] 사진 WebP/AVIF 최적화
+- [ ] 사진별 crop/focal point 최종 조정
+- [ ] 신랑 전화번호
+- [ ] 신부 전화번호
+- [ ] 필요한 혼주 전화번호
+- [ ] 신랑측 계좌
+- [ ] 신부측 계좌
+- [ ] 필요한 혼주 계좌
+- [ ] BGM 음원
+- [ ] 음원 공개 사용 권리 확인
+- [ ] 실제 사진 기준 전체 palette 미세 조정
+
+## P8 — Kakao / 공유 / OG
+
+- [ ] Kakao Developers 앱 설정
+- [ ] JavaScript Key 설정
+- [ ] Preview/Production domain 등록
+- [ ] KakaoTalk 공유 실제 기기 테스트
+- [ ] 1200x630 OG 이미지 제작
+- [ ] `og:image` absolute production URL 적용
+- [ ] `og:url` final domain 적용
+- [ ] 카카오톡 링크 미리보기 확인
+- [ ] 문자/기타 SNS 공유 확인
+- [ ] 필요 시 TMAP deep link 추가
+
+## P9 — Backup / 운영 안정성
+
+- [ ] RSVP 전체 CSV backup
+- [ ] Guestbook CSV backup
+- [ ] D1 Time Travel 복구 절차 실제 테스트
+- [ ] Preview/Production 데이터 완전 분리 확인
+- [ ] destructive action confirmation
+- [ ] 관리자 모바일 QA
+- [ ] 결혼식 직전 최종 RSVP/식사 인원 export
+- [ ] 결혼식 이후 RSVP 개인정보 보존/삭제 일정 결정
+
+## P10 — Production Release
+
+- [ ] Preview에서 blocker 0건
+- [ ] 실제 사진/연락처/계좌 최종 확인
+- [ ] D1 Production binding
+- [ ] R2 Production binding
+- [ ] Turnstile Production key
+- [ ] Cloudflare Access Production policy
+- [ ] Kakao Production domain
+- [ ] custom domain 연결
+- [ ] `noindex` 유지/해제 최종 결정
+- [ ] PR 최종 review
+- [ ] `main` merge
+- [ ] Production build 성공
+- [ ] 최종 Android/iOS/Kakao 인앱 검증
+
+---
+
+# 배포 이후 우선 개발 순서
+
+```text
+Preview 배포
+   ↓
+실제 모바일 UI/반응형 수정
+   ↓
+D1 연결 + RSVP/Guestbook 실데이터 검증
+   ↓
+Turnstile
+   ↓
+Admin RSVP/Guestbook 관리
+   ↓
+Cloudflare Access
+   ↓
+Admin Settings/Audit
+   ↓
+R2 Media 관리
+   ↓
+실제 사진/전화번호/계좌/BGM
+   ↓
+Kakao Share / OG
+   ↓
+Backup / Security / 실기기 QA
+   ↓
+main merge + Production
+```
+
+이 순서는 특별한 blocker가 없는 한 이후 개발의 기준 순서로 사용한다.
+
+---
+
+# 현재 외부 정보/설정이 필요한 항목
 
 아래 항목은 코드만으로 최종 완료할 수 없다.
 
@@ -175,4 +398,10 @@
 7. Kakao Developers JavaScript Key 및 최종 production domain
 8. 최종 custom domain
 
-위 값이 없어도 나머지 관리자 구조와 UI/API 개발은 계속 진행한다.
+---
+
+# 현재 결론
+
+**코드 기능 추가는 여기서 일시적으로 멈추고 Cloudflare Preview 배포를 먼저 수행한다.**
+
+Preview 환경에서 실제 모바일 화면, route, HTTPS browser API, Pages Functions 동작을 확인한 뒤 위 P0 → P10 backlog 순서로 수정·완성한다.
