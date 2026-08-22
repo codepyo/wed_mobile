@@ -1,0 +1,13 @@
+.admin-media-status { display: grid; gap: 6px; }
+.admin-media-status strong { font-size: 14px; }
+.admin-media-status span { color: #7d7871; font-size: 11px; line-height: 1.6; }
+.admin-media-upload { display: grid; gap: 18px; }
+.admin-media-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.admin-media-fields label { display: grid; gap: 7px; min-width: 0; }
+.admin-media-fields label > span { font-size: 12px; font-weight: 600; }
+.admin-media-fields input, .admin-media-fields select { width: 100%; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid #d3d0ca; background: #fff; color: #1b1b1b; font: inherit; font-size: 13px; }
+.admin-media-fields input[type="file"] { padding: 9px 10px; }
+.admin-table--media { min-width: 920px; }
+@media (max-width: 700px) {
+  .admin-media-fields { grid-template-columns: 1fr; }
+}
