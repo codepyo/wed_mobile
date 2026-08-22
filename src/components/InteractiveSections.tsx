@@ -80,9 +80,10 @@ export function RsvpSection() {
       return;
     }
 
+    const formElement = event.currentTarget;
     setSubmitting(true);
     setStatus('');
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const attendance = String(form.get('attendance') || '');
     const payload = {
       name: form.get('name'),
@@ -107,7 +108,7 @@ export function RsvpSection() {
         }
         throw new Error(String(data.error || 'submit failed'));
       }
-      event.currentTarget.reset();
+      formElement.reset();
       setStatus('참석 여부가 전달되었습니다. 감사합니다.');
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
@@ -186,9 +187,10 @@ export function GuestbookSection() {
       return;
     }
 
+    const formElement = event.currentTarget;
     setSubmitting(true);
     setStatus('');
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const payload = {
       name: form.get('name'),
       side: form.get('side'),
@@ -210,7 +212,7 @@ export function GuestbookSection() {
         }
         throw new Error(String(data.error || 'submit failed'));
       }
-      event.currentTarget.reset();
+      formElement.reset();
       setStatus('축하 메시지를 남겨주셔서 감사합니다.');
       await load();
     } catch (error) {
