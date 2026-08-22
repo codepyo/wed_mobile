@@ -1,0 +1,150 @@
+export type TransportItem = {
+  key: string;
+  label: string;
+  title: string;
+  lines: string[];
+};
+
+export type WeddingImage = {
+  src: string;
+  alt: string;
+  ratio: string;
+  position: string;
+};
+
+export type AccountItem = {
+  id: string;
+  label: string;
+  bank: string;
+  accountNumber: string;
+  holder: string;
+};
+
+export type ContactItem = {
+  id: string;
+  label: string;
+  name: string;
+  phone: string;
+};
+
+export const wedding = {
+  couple: {
+    groom: {
+      name: '승표',
+      englishName: 'SEUNGPYO',
+      father: '홍상민',
+      mother: '정미경',
+      relation: '아들',
+      phone: '',
+    },
+    bride: {
+      name: '제희',
+      englishName: 'JEHEE',
+      father: '이현규',
+      mother: '장대선',
+      relation: '딸',
+      phone: '',
+    },
+  },
+  contacts: [
+    { id: 'groom', label: '신랑', name: '승표', phone: '' },
+    { id: 'bride', label: '신부', name: '제희', phone: '' },
+    { id: 'groom-father', label: '신랑 아버지', name: '홍상민', phone: '' },
+    { id: 'groom-mother', label: '신랑 어머니', name: '정미경', phone: '' },
+    { id: 'bride-father', label: '신부 아버지', name: '이현규', phone: '' },
+    { id: 'bride-mother', label: '신부 어머니', name: '장대선', phone: '' },
+  ] satisfies ContactItem[],
+  invitation: [
+    '비가 쏟아지던 어느 여름날',
+    '운명처럼 만난 소년과 소녀는',
+    '멀어진 거리와 시간 속에서도',
+    '서로를 향한 마음을 이어오며',
+    '이제 하나의 길을 함께 걷고자 합니다.',
+    '이 길의 시작을 따뜻하게 축복해주시면 감사하겠습니다.',
+  ],
+  ceremony: {
+    isoDate: '2026-10-31T12:00:00+09:00',
+    year: 2026,
+    month: 10,
+    day: 31,
+    weekday: '토요일',
+    time: '낮 12시',
+    time24: '12:00',
+    venue: '라마다프라자수원호텔',
+    floor: '3층',
+    address: '경기도 수원시 팔달구 중부대로 150',
+    latitude: 37.2777365,
+    longitude: 127.0324282,
+  },
+  images: {
+    hero: {
+      src: '',
+      alt: '승표와 제희의 대표 웨딩 사진',
+      ratio: '4 / 5',
+      position: '50% 38%',
+    } satisfies WeddingImage,
+    gallery: [
+      { src: '', alt: '승표와 제희의 웨딩 사진 1', ratio: '4 / 5', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 2', ratio: '3 / 2', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 3', ratio: '1 / 1', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 4', ratio: '3 / 4', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 5', ratio: '3 / 2', position: '50% 50%' },
+      { src: '', alt: '승표와 제희의 웨딩 사진 6', ratio: '4 / 5', position: '50% 50%' },
+    ] satisfies WeddingImage[],
+    og: '',
+  },
+  mapLinks: {
+    kakao: 'https://map.kakao.com/link/to/라마다프라자수원호텔,37.2777365,127.0324282',
+    naver: 'https://map.naver.com/p/search/라마다프라자수원호텔',
+    tmap: '',
+  },
+  transport: [
+    {
+      key: 'car',
+      label: 'BY CAR',
+      title: '자가용',
+      lines: ['라마다프라자수원호텔 주차장 이용 가능', '도착 후 호텔 주차 안내에 따라 입차해 주세요.'],
+    },
+    {
+      key: 'station',
+      label: 'SUWON STATION',
+      title: '수원역 · 택시',
+      lines: [
+        'KTX 수원역 4번 출구 하차 후 버스 환승',
+        '동수원병원 · 라마다프라자수원호텔 앞 하차',
+        '택시 이용 시 수원역 4번 출구에서 호텔까지 약 10분',
+      ],
+    },
+    {
+      key: 'bus',
+      label: 'EXPRESS BUS',
+      title: '광역버스',
+      lines: [
+        '잠실역 1007-1 · 사당역 7000, 7001 · 강남역 3007',
+        '아주대 · 아주대학교병원 앞 하차 후 시내버스 환승',
+      ],
+    },
+  ] satisfies TransportItem[],
+  accounts: {
+    groom: [] as AccountItem[],
+    bride: [] as AccountItem[],
+  },
+  rsvp: {
+    fallbackDeadline: '',
+  },
+  share: {
+    title: '승표 & 제희, 결혼합니다',
+    description: '2026년 10월 31일 토요일 낮 12시 · 라마다프라자수원호텔 3층',
+  },
+  music: {
+    src: '',
+    title: '',
+  },
+  features: {
+    contacts: false,
+    accounts: false,
+    rsvp: false,
+    guestbook: false,
+    music: false,
+  },
+};
