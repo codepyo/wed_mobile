@@ -8,6 +8,34 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 const cleanText = (value, max) => String(value ?? '').trim().slice(0, max);
 
+async function verifyTurnstile(context, token, action) {
+  const secret = context.env.TURNSTILE_SECRET_KEY;
+  if (!secret) return true;
+  if (!token || String(token).length > 2048) return false;
+
+  const form = new URLSearchParams({
+    secret,
+    response: String(token),
+    remoteip: context.request.headers.get('CF-Connecting-IP') || '',
+  });
+
+  try {
+    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: form,
+    });
+    if (!response.ok) return false;
+    const result = await response.json();
+    if (!result.success) return false;
+    if (result.action && result.action !== action) return false;
+    return true;
+  } catch (error) {
+    console.error('TURNSTILE_VERIFY_FAILED', error);
+    return false;
+  }
+}
+
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
@@ -26,8 +54,18 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'INVALID_GUEST_COUNT' }, 400);
     }
 
-    const enabled = await context.env.WEDDING_DB.prepare("SELECT value FROM site_settings WHERE key='rsvp_enabled'").first();
-    if (enabled?.value === 'false') return json({ ok: false, error: 'RSVP_CLOSED' }, 403);
+    const settings = await context.env.WEDDING_DB.prepare(`
+      SELECT key, value FROM site_settings WHERE key IN ('rsvp_enabled', 'rsvp_deadline')
+    `).all();
+    const map = Object.fromEntries((settings.results ?? []).map((row) => [row.key, row.value]));
+    if (map.rsvp_enabled === 'false') return json({ ok: false, error: 'RSVP_CLOSED' }, 403);
+    if (map.rsvp_deadline) {
+      const deadline = Date.parse(map.rsvp_deadline);
+      if (Number.isFinite(deadline) && Date.now() > deadline) return json({ ok: false, error: 'RSVP_DEADLINE_PASSED' }, 403);
+    }
+
+    const human = await verifyTurnstile(context, body.turnstileToken, 'rsvp');
+    if (!human) return json({ ok: false, error: 'TURNSTILE_FAILED' }, 403);
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
