@@ -12,6 +12,21 @@ export type WeddingImage = {
   position: string;
 };
 
+export type AccountItem = {
+  id: string;
+  label: string;
+  bank: string;
+  accountNumber: string;
+  holder: string;
+};
+
+export type ContactItem = {
+  id: string;
+  label: string;
+  name: string;
+  phone: string;
+};
+
 export const wedding = {
   couple: {
     groom: {
@@ -31,6 +46,14 @@ export const wedding = {
       phone: '',
     },
   },
+  contacts: [
+    { id: 'groom', label: '신랑', name: '승표', phone: '' },
+    { id: 'bride', label: '신부', name: '제희', phone: '' },
+    { id: 'groom-father', label: '신랑 아버지', name: '홍상민', phone: '' },
+    { id: 'groom-mother', label: '신랑 어머니', name: '정미경', phone: '' },
+    { id: 'bride-father', label: '신부 아버지', name: '이현규', phone: '' },
+    { id: 'bride-mother', label: '신부 어머니', name: '장대선', phone: '' },
+  ] satisfies ContactItem[],
   invitation: [
     '비가 쏟아지던 어느 여름날',
     '운명처럼 만난 소년과 소녀는',
@@ -73,6 +96,7 @@ export const wedding = {
   mapLinks: {
     kakao: 'https://map.kakao.com/link/to/라마다프라자수원호텔,37.2777365,127.0324282',
     naver: 'https://map.naver.com/p/search/라마다프라자수원호텔',
+    tmap: '',
   },
   transport: [
     {
@@ -102,8 +126,15 @@ export const wedding = {
     },
   ] satisfies TransportItem[],
   accounts: {
-    groom: [],
-    bride: [],
+    groom: [] as AccountItem[],
+    bride: [] as AccountItem[],
+  },
+  rsvp: {
+    fallbackDeadline: '',
+  },
+  share: {
+    title: '승표 & 제희, 결혼합니다',
+    description: '2026년 10월 31일 토요일 낮 12시 · 라마다프라자수원호텔 3층',
   },
   music: {
     src: '',
