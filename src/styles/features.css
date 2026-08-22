@@ -16,14 +16,7 @@
   border-color: rgba(255,255,255,.28);
   color: #f7f4ee;
 }
-.gallery-grid__button {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: zoom-in;
-}
+.gallery-grid__button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
 .gallery-grid__button .photo-frame { width: 100%; }
 .gallery-grid__item--2 { margin-top: 18%; }
 .gallery-grid__item--3 { grid-column: 2; }
@@ -45,25 +38,59 @@
 .lightbox__stage img { display: block; max-width: 100%; max-height: 82dvh; margin: auto; object-fit: contain; }
 .lightbox__stage p { margin-top: 12px; font-family: var(--serif); font-size: 12px; letter-spacing: .12em; color: #aaa59d; }
 .lightbox__empty { display: grid; place-items: center; aspect-ratio: 4/5; max-height: 72dvh; background: #242321; color: #aaa59d; }
-.lightbox__close, .lightbox__nav {
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  color: white;
-  background: transparent;
-  cursor: pointer;
-}
+.lightbox__close, .lightbox__nav { min-width: 44px; min-height: 44px; border: 0; color: white; background: transparent; cursor: pointer; }
 .lightbox__close { position: absolute; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); font-size: 32px; font-weight: 200; }
 .lightbox__nav { font-family: var(--serif); font-size: 42px; }
 .contact-list { margin-top: 48px; border-top: 1px solid var(--line); }
 .contact-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.contact-row > div:first-child { display: grid; gap: 3px; }
+.contact-row small { color: var(--muted); font-size: 10px; letter-spacing: .08em; }
 .contact-row strong { font-family: var(--serif-kr); font-size: 17px; font-weight: 400; }
-.contact-row div { display: flex; gap: 8px; }
-.contact-row a { min-width: 54px; min-height: 44px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 12px; }
-.feature-empty { margin-top: 40px; color: var(--muted); font-size: 13px; }
+.contact-row__actions { display: flex; gap: 8px; }
+.contact-row__actions a { min-width: 54px; min-height: 44px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 12px; }
+.account-section__intro { margin: 30px 0 42px 44px; max-width: 320px; color: var(--muted); font-family: var(--serif-kr); font-size: 13px; line-height: 1.9; word-break: keep-all; }
+.account-groups { border-top: 1px solid var(--ink); }
+.account-group { border-bottom: 1px solid var(--ink); }
+.account-group__toggle { width: 100%; min-height: 60px; padding: 0; display: flex; align-items: center; justify-content: space-between; border: 0; color: var(--ink); background: transparent; font-family: var(--serif-kr); font-size: 15px; cursor: pointer; }
+.account-group__toggle strong { font-family: var(--serif); font-size: 24px; font-weight: 400; }
+.account-group__panel { padding: 0 0 12px; }
+.account-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 0; border-top: 1px solid var(--line); }
+.account-item > div { display: grid; gap: 5px; min-width: 0; }
+.account-item small { color: var(--muted); font-size: 10px; }
+.account-item strong { font-size: 13px; font-weight: 500; word-break: break-all; }
+.account-item span { color: var(--muted); font-size: 11px; }
+.account-item button { flex: 0 0 auto; min-width: 62px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); color: var(--ink); background: transparent; cursor: pointer; }
+.account-item button svg { width: 15px; height: 15px; }
 .closing__actions { display: grid; gap: 10px; margin-top: 36px; }
 .closing__actions .share-button { margin-top: 0; }
 .closing__actions .utility-button { width: 100%; }
+.music-control {
+  position: fixed;
+  z-index: 90;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(23,23,23,.9);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+.music-control > span { font-family: var(--serif); font-size: 19px; line-height: 1; }
+.music-control small { margin-top: 1px; font-size: 6px; letter-spacing: .12em; }
+.music-control.is-playing > span { animation: music-pulse 1.6s ease-in-out infinite; }
+@keyframes music-pulse { 50% { transform: scale(1.14); opacity: .68; } }
 @media (max-width: 359px) {
   .lightbox { grid-template-columns: 42px minmax(0,1fr) 42px; }
+  .account-section__intro { margin-left: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .music-control.is-playing > span { animation: none; }
 }
