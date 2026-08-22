@@ -74,6 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_admin_audit_created_at ON admin_audit_log(created
 
 INSERT OR IGNORE INTO site_settings(key, value, updated_at) VALUES
   ('rsvp_enabled', 'true', datetime('now')),
+  ('rsvp_deadline', '', datetime('now')),
   ('guestbook_enabled', 'true', datetime('now')),
   ('guestbook_write_enabled', 'true', datetime('now')),
   ('music_enabled', 'false', datetime('now'));
