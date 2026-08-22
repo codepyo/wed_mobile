@@ -28,6 +28,7 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
     if (!siteKey || !containerRef.current) return;
     let cancelled = false;
 
+    const clearToken = () => onToken('');
     const render = () => {
       if (cancelled || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
@@ -35,9 +36,13 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
         action,
         theme: 'light',
         size: 'flexible',
+        retry: 'auto',
+        'refresh-expired': 'auto',
+        'refresh-timeout': 'auto',
         callback: (token: string) => onToken(token),
-        'expired-callback': () => onToken(''),
-        'error-callback': () => onToken(''),
+        'expired-callback': clearToken,
+        'timeout-callback': clearToken,
+        'error-callback': clearToken,
       });
     };
 
