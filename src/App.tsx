@@ -9,6 +9,7 @@ import {
   InvitationSection,
   LocationSection,
 } from './components/Sections';
+import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
 import { wedding } from './data/wedding';
 
 function getDdayLabel() {
@@ -81,7 +82,9 @@ function App() {
       <DateSection dday={dday} />
       <GallerySection />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
+      <RsvpSection />
       <AccountSection />
+      <GuestbookSection />
       <ClosingSection onShare={shareInvitation} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
