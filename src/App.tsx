@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  AccountSection,
   ClosingSection,
+  ContactSection,
   DateSection,
   GallerySection,
   HeroSection,
@@ -14,7 +16,6 @@ function getDdayLabel() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.ceil((target - today.getTime()) / 86_400_000);
-
   if (diff > 0) return `D-${diff}`;
   if (diff === 0) return 'D-DAY';
   return `D+${Math.abs(diff)}`;
@@ -27,17 +28,14 @@ function App() {
   useEffect(() => {
     const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      },
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      }),
       { threshold: 0.12, rootMargin: '0px 0px -5% 0px' },
     );
-
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
   }, []);
@@ -48,12 +46,12 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const copyAddress = async () => {
+  const copyText = async (value: string, success: string) => {
     try {
-      await navigator.clipboard.writeText(wedding.ceremony.address);
-      setToast('주소가 복사되었습니다.');
+      await navigator.clipboard.writeText(value);
+      setToast(success);
     } catch {
-      setToast('주소 복사에 실패했습니다.');
+      setToast('복사하지 못했습니다.');
     }
   };
 
@@ -63,14 +61,12 @@ function App() {
       text: `${wedding.ceremony.year}년 ${wedding.ceremony.month}월 ${wedding.ceremony.day}일 ${wedding.ceremony.weekday} ${wedding.ceremony.time} · ${wedding.ceremony.venue} ${wedding.ceremony.floor}`,
       url: window.location.href,
     };
-
     try {
       if (navigator.share) {
         await navigator.share(shareData);
         return;
       }
-      await navigator.clipboard.writeText(window.location.href);
-      setToast('청첩장 주소가 복사되었습니다.');
+      await copyText(window.location.href, '청첩장 주소가 복사되었습니다.');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
       setToast('공유를 완료하지 못했습니다.');
@@ -81,10 +77,12 @@ function App() {
     <main className="invitation-shell">
       <HeroSection />
       <InvitationSection />
+      <ContactSection />
       <DateSection dday={dday} />
       <GallerySection />
-      <LocationSection onCopyAddress={copyAddress} />
-      <ClosingSection onShare={shareInvitation} />
+      <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
+      <AccountSection />
+      <ClosingSection onShare={shareInvitation} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
   );
