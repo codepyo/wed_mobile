@@ -8,6 +8,8 @@ type Props = {
 };
 
 export function LocationSection({ onCopyAddress }: Props) {
+  const hasTmap = Boolean(wedding.mapLinks.tmap);
+
   return (
     <section className="location-section" data-reveal>
       <SectionLabel index="03" eyebrow="Location" title="오시는 길" inverted />
@@ -24,10 +26,10 @@ export function LocationSection({ onCopyAddress }: Props) {
         venue={wedding.ceremony.venue}
       />
 
-      <div className="map-actions">
+      <div className={`map-actions ${hasTmap ? 'map-actions--four' : 'map-actions--three'}`}>
         <a href={wedding.mapLinks.kakao} target="_blank" rel="noreferrer" className="map-action"><span>카카오맵</span><ArrowUpRightIcon /></a>
         <a href={wedding.mapLinks.naver} target="_blank" rel="noreferrer" className="map-action"><span>네이버지도</span><ArrowUpRightIcon /></a>
-        {wedding.mapLinks.tmap && <a href={wedding.mapLinks.tmap} target="_blank" rel="noreferrer" className="map-action"><span>TMAP</span><ArrowUpRightIcon /></a>}
+        {hasTmap && <a href={wedding.mapLinks.tmap} target="_blank" rel="noreferrer" className="map-action"><span>TMAP</span><ArrowUpRightIcon /></a>}
         <button type="button" className="map-action" onClick={onCopyAddress}><span>주소 복사</span><CopyIcon /></button>
       </div>
 
