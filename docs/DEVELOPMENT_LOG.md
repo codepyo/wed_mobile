@@ -141,7 +141,6 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] 공개 Gallery가 active `GALLERY` asset을 `sort_order` 순으로 자동 사용하도록 구현
 - [x] BGM이 active `BGM` asset + `music_enabled` 설정을 사용하도록 구현
 - [x] Gallery 사진은 Admin Media에서 `GALLERY`로 업로드하면 공개 Gallery 데이터에 자동 포함되는 구조 구현
-- [ ] OG 이미지 메타태그 연결
 
 ### Media 후순위 개선
 
@@ -154,22 +153,42 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [ ] 기존 파일 비활성/삭제/버전 정리 정책
 - [ ] 이미지 width/height metadata 자동 추출 및 관리
 
+## 2026-08-23 — OG / Kakao 공유
+
+### 공유 코드 기반
+
+- [x] HTML Open Graph title / description / image / url 메타태그 추가
+- [x] Twitter summary_large_image 메타태그 추가
+- [x] `/api/og-image` 고정 공개 이미지 endpoint 구현
+- [x] active `OG` 이미지가 있으면 공유 이미지로 사용
+- [x] active `OG`가 없으면 active `HERO` 이미지를 자동 fallback으로 사용
+- [x] R2 bucket은 비공개 상태를 유지하고 Worker가 공유 이미지를 전달
+- [x] Kakao Share `sendDefault`의 imageUrl을 `/api/og-image`로 통일
+- [x] Kakao 공유 링크를 청첩장 root URL로 정규화
+- [x] Kakao SDK/키 미구성 또는 오류 시 Web Share / URL 복사 fallback 유지
+- [ ] Cloudflare Build Variable `VITE_KAKAO_JS_KEY` 설정
+- [ ] Kakao Developers Web 플랫폼에 Production domain 등록 확인
+- [ ] 실제 OG 전용 이미지 업로드
+- [ ] KakaoTalk 실제 공유 카드 제목/설명/이미지 검증
+
 ## 남은 개발 작업
 
-### 우선순위 1 — 실제 청첩장 콘텐츠 완성
+### 우선순위 1 — 공유 기능 마무리
+
+- [ ] Kakao Developers 앱 생성/기존 앱 확인
+- [ ] JavaScript Key 확인 후 Cloudflare `VITE_KAKAO_JS_KEY` 등록
+- [ ] Kakao Web 플랫폼 domain에 `https://wed-mobile.robin5544.workers.dev` 등록
+- [ ] Admin Media에서 OG 이미지 업로드
+- [ ] KakaoTalk 실제 공유 카드 검증
+- [ ] custom domain 확정 시 Kakao domain 및 `og:url`을 custom domain으로 변경
+
+### 우선순위 2 — 실제 청첩장 콘텐츠 완성
 
 - [ ] 실제 Gallery 웨딩 사진 업로드
 - [ ] 신랑/신부 및 혼주 연락처 입력 후 Contact 기능 활성화
 - [ ] 신랑측/신부측 계좌 정보 입력 후 Account 기능 활성화
 - [ ] 최종 BGM 파일 업로드 및 재생 검증
 - [ ] 문구/교통/주차 등 최종 콘텐츠 검수
-
-### 우선순위 2 — 공유/외부 노출 완성
-
-- [ ] OG 이미지 업로드 및 HTML/Open Graph 메타태그 연결
-- [ ] Kakao Share Production JavaScript Key 및 도메인 설정 최종 확인
-- [ ] Kakao 공유 카드의 제목/설명/이미지 실제 모바일 검증
-- [ ] custom domain 연결
 
 ### 우선순위 3 — 위치/지도
 
@@ -200,4 +219,4 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ## 다음 개발 권장 순서
 
-R2 Media의 세부 디자인 편집은 실제 사진이 모두 준비된 뒤 진행한다. 다음 단계는 기능 개발 관점에서 `실제 콘텐츠 입력 → OG/Kakao 공유 → 실제 지도 → custom domain → 모바일 최종 QA` 순서가 효율적이다.
+현재 공유 기능의 코드 기반은 완성 단계다. 다음은 `Kakao JavaScript Key + Web domain 설정 → OG 전용 이미지 업로드 → 실제 KakaoTalk 공유 검증`을 끝낸 뒤 `실제 지도 → custom domain → 모바일 최종 QA` 순서로 진행한다.

@@ -43,13 +43,15 @@ export async function shareToKakao() {
   const Kakao = await loadKakaoSdk();
   if (!Kakao.isInitialized()) Kakao.init(key);
 
-  const url = window.location.href;
+  const url = window.location.origin + '/';
+  const imageUrl = `${window.location.origin}/api/og-image`;
+
   Kakao.Share.sendDefault({
     objectType: 'feed',
     content: {
       title: wedding.share.title,
       description: wedding.share.description,
-      imageUrl: wedding.images.og ? new URL(wedding.images.og, window.location.origin).href : window.location.origin,
+      imageUrl,
       link: { mobileWebUrl: url, webUrl: url },
     },
     buttons: [{ title: '모바일 청첩장 보기', link: { mobileWebUrl: url, webUrl: url } }],
