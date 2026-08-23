@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings까지 실제 환경 검증 완료.
+Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings, R2 Media 업로드까지 실제 환경 검증 완료.
 
 Production: `https://wed-mobile.robin5544.workers.dev`
 
@@ -111,7 +111,9 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [~] 장기 개선: RSVP/Guestbook server-side pagination 또는 cursor pagination 적용 예정
 - [~] Production에서 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 재검증 필요
 
-## 2026-08-23 — R2 Media 기반
+## 2026-08-23 — R2 Media
+
+### 저장/관리 기반
 
 - [x] Production R2 bucket `wedding-media-production` 생성
 - [x] Preview R2 bucket `wedding-media-preview` 생성
@@ -124,9 +126,22 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] MIME / 파일 크기 validation
 - [x] R2 upload 후 D1 실패 시 object rollback
 - [x] Media 업로드 audit log
-- [ ] Production 배포 후 `WEDDING_MEDIA` binding 인식 확인
-- [ ] 실제 Hero/Gallery/OG/BGM 업로드 검증
-- [ ] 공개 청첩장에서 active media asset 사용
+- [x] Production에서 `WEDDING_MEDIA` binding 인식 확인
+- [x] 실제 Hero 이미지 R2 업로드 및 D1 `media_assets` 등록 확인
+
+### 공개 미디어 전달
+
+- [x] private R2 유지 — bucket Public URL 비활성 구조 유지
+- [x] `/api/media` active asset manifest API 구현
+- [x] `/api/media/:id` active asset R2 streaming API 구현
+- [x] UUID asset URL에 장기 immutable cache 적용
+- [x] 공개 Hero가 active `HERO` asset을 우선 사용하도록 구현
+- [x] 공개 Gallery가 active `GALLERY` asset을 sort order 순으로 사용하도록 구현
+- [x] BGM이 active `BGM` asset + `music_enabled` 설정을 사용하도록 구현
+- [ ] Production 배포 후 업로드된 Hero가 공개 청첩장에 표시되는지 검증
+- [ ] 실제 Gallery 업로드/정렬 검증
+- [ ] 실제 BGM 업로드/재생 검증
+- [ ] OG 이미지 메타태그 연결
 - [ ] Gallery reorder / focal point editor
 - [ ] 기존 파일 비활성/삭제 정책
 
@@ -145,4 +160,4 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ## 다음 개발
 
-R2 Media PR을 Production 배포한 뒤 Admin Media에서 실제 파일 업로드를 검증하고, 다음으로 공개 청첩장이 D1 `media_assets`의 active asset을 읽어 Hero/Gallery/OG/BGM에 반영하도록 연결한다.
+공개 R2 Media 전달 코드를 Production에 배포하고 현재 등록된 Hero 사진 노출을 검증한다. 이후 Gallery 사진 업로드/순서 관리, BGM, OG 이미지 순으로 운영 기능을 확장한다.

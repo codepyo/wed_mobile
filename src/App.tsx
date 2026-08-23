@@ -4,14 +4,14 @@ import {
   ClosingSection,
   ContactSection,
   DateSection,
-  GallerySection,
-  HeroSection,
   InvitationSection,
   LocationSection,
 } from './components/Sections';
+import { MediaGallerySection, MediaHeroSection } from './components/MediaSections';
 import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
 import { MusicControl } from './components/MusicControl';
 import { wedding } from './data/wedding';
+import { emptyMediaState, fetchPublicMedia } from './utils/media';
 import { shareToKakao } from './utils/share';
 
 function getDdayLabel() {
@@ -24,9 +24,29 @@ function getDdayLabel() {
   return `D+${Math.abs(diff)}`;
 }
 
+async function getMusicEnabled() {
+  try {
+    const response = await fetch('/api/site-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return data.musicEnabled === true;
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [toast, setToast] = useState('');
+  const [media, setMedia] = useState(emptyMediaState);
+  const [musicEnabled, setMusicEnabled] = useState(false);
   const dday = useMemo(getDdayLabel, []);
+
+  useEffect(() => {
+    void Promise.all([fetchPublicMedia(), getMusicEnabled()]).then(([nextMedia, nextMusicEnabled]) => {
+      setMedia(nextMedia);
+      setMusicEnabled(nextMusicEnabled);
+    });
+  }, []);
 
   useEffect(() => {
     const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
@@ -41,7 +61,7 @@ function App() {
     );
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
-  }, []);
+  }, [media.gallery.length]);
 
   useEffect(() => {
     if (!toast) return;
@@ -83,17 +103,17 @@ function App() {
 
   return (
     <main className="invitation-shell">
-      <HeroSection />
+      <MediaHeroSection image={media.hero} />
       <InvitationSection />
       <ContactSection />
       <DateSection dday={dday} />
-      <GallerySection />
+      <MediaGallerySection images={media.gallery} />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
       <RsvpSection />
       <AccountSection onCopyText={copyText} />
       <GuestbookSection />
       <ClosingSection onShare={shareInvitation} onKakaoShare={kakaoShare} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
-      <MusicControl />
+      <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={musicEnabled && Boolean(media.bgm?.url)} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
   );
