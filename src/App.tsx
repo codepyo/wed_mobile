@@ -11,28 +11,23 @@ import { GuestbookSection, RsvpSection } from './components/InteractiveSections'
 import { LocationSection } from './components/LocationSection';
 import { MusicControl } from './components/MusicControl';
 import { wedding } from './data/wedding';
+import { canUseNativeShare, copyToClipboard, getInvitationUrl } from './utils/browser';
 import { emptyMediaState, fetchPublicMedia } from './utils/media';
 import { shareToKakao } from './utils/share';
+import { fetchSiteConfig } from './utils/siteConfig';
 
 function getDdayLabel() {
-  const target = new Date(wedding.ceremony.isoDate).getTime();
+  const target = Date.UTC(
+    wedding.ceremony.year,
+    wedding.ceremony.month - 1,
+    wedding.ceremony.day,
+  );
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((target - today.getTime()) / 86_400_000);
+  const current = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.round((target - current) / 86_400_000);
   if (diff > 0) return `D-${diff}`;
   if (diff === 0) return 'D-DAY';
   return `D+${Math.abs(diff)}`;
-}
-
-async function getMusicEnabled() {
-  try {
-    const response = await fetch('/api/site-config', { headers: { accept: 'application/json' }, cache: 'no-store' });
-    if (!response.ok) return false;
-    const data = await response.json();
-    return data.musicEnabled === true;
-  } catch {
-    return false;
-  }
 }
 
 function App() {
@@ -40,11 +35,12 @@ function App() {
   const [media, setMedia] = useState(emptyMediaState);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const dday = useMemo(getDdayLabel, []);
+  const nativeShareAvailable = canUseNativeShare();
 
   useEffect(() => {
-    void Promise.all([fetchPublicMedia(), getMusicEnabled()]).then(([nextMedia, nextMusicEnabled]) => {
+    void Promise.all([fetchPublicMedia(), fetchSiteConfig()]).then(([nextMedia, config]) => {
       setMedia(nextMedia);
-      setMusicEnabled(nextMusicEnabled);
+      setMusicEnabled(config.musicEnabled);
     });
   }, []);
 
@@ -70,25 +66,24 @@ function App() {
   }, [toast]);
 
   const copyText = async (value: string, success: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setToast(success);
-    } catch {
-      setToast('복사하지 못했습니다.');
-    }
+    const copied = await copyToClipboard(value);
+    setToast(copied ? success : '복사하지 못했습니다.');
   };
 
   const shareInvitation = async () => {
-    const shareData = { title: wedding.share.title, text: wedding.share.description, url: window.location.href };
+    const url = getInvitationUrl();
+    const shareData = { title: wedding.share.title, text: wedding.share.description, url };
+
+    if (!canUseNativeShare()) {
+      await copyText(url, '청첩장 주소가 복사되었습니다.');
+      return;
+    }
+
     try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
-      }
-      await copyText(window.location.href, '청첩장 주소가 복사되었습니다.');
+      await navigator.share(shareData);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      setToast('공유를 완료하지 못했습니다.');
+      await copyText(url, '기기 공유를 사용할 수 없어 청첩장 주소를 복사했습니다.');
     }
   };
 
@@ -105,14 +100,19 @@ function App() {
     <main className="invitation-shell">
       <MediaHeroSection image={media.hero} />
       <InvitationSection />
-      <ContactSection />
       <DateSection dday={dday} />
       <MediaGallerySection images={media.gallery} />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
-      <RsvpSection />
+      <ContactSection />
       <AccountSection onCopyText={copyText} />
+      <RsvpSection />
       <GuestbookSection />
-      <ClosingSection onShare={shareInvitation} onKakaoShare={kakaoShare} onCopyUrl={() => copyText(window.location.href, '청첩장 주소가 복사되었습니다.')} />
+      <ClosingSection
+        onShare={shareInvitation}
+        onKakaoShare={kakaoShare}
+        onCopyUrl={() => copyText(getInvitationUrl(), '청첩장 주소가 복사되었습니다.')}
+        canNativeShare={nativeShareAvailable}
+      />
       <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={musicEnabled && Boolean(media.bgm?.url)} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
