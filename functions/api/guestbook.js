@@ -70,8 +70,14 @@ export async function onRequestPost(context) {
     if (!message) return json({ ok: false, error: 'MESSAGE_REQUIRED' }, 400);
     if (deletePassword.length < 4 || deletePassword.length > 30) return json({ ok: false, error: 'INVALID_DELETE_PASSWORD' }, 400);
 
-    const enabled = await context.env.WEDDING_DB.prepare("SELECT value FROM site_settings WHERE key='guestbook_write_enabled'").first();
-    if (enabled?.value === 'false') return json({ ok: false, error: 'GUESTBOOK_CLOSED' }, 403);
+    const settings = await context.env.WEDDING_DB.prepare(`
+      SELECT key, value FROM site_settings
+      WHERE key IN ('guestbook_enabled', 'guestbook_write_enabled')
+    `).all();
+    const settingMap = Object.fromEntries((settings.results ?? []).map((row) => [row.key, row.value]));
+    if (settingMap.guestbook_enabled === 'false' || settingMap.guestbook_write_enabled === 'false') {
+      return json({ ok: false, error: 'GUESTBOOK_CLOSED' }, 403);
+    }
 
     const human = await verifyTurnstile(context, body.turnstileToken, 'guestbook');
     if (!human) return json({ ok: false, error: 'TURNSTILE_FAILED' }, 403);
