@@ -1,0 +1,7 @@
+.kakao-map { position: relative; }
+.kakao-map__canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.kakao-map__fallback { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: end start; padding: 16px 18px; background: #242321; }
+.kakao-map__fallback > span { position: relative; z-index: 2; font-family: var(--serif); font-size: 10px; letter-spacing: .14em; color: #d9d3ca; }
+.kakao-map__venue { position: absolute; left: 12px; bottom: 12px; z-index: 2; display: grid; gap: 2px; padding: 9px 11px; background: rgba(23,23,23,.78); backdrop-filter: blur(8px); pointer-events: none; }
+.kakao-map__venue strong { font-family: var(--serif); font-size: 11px; font-weight: 500; letter-spacing: .08em; color: #fff; }
+.kakao-map__venue span { font-size: 8px; letter-spacing: .14em; color: #c6c0b7; }

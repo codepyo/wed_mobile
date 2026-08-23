@@ -5,10 +5,10 @@ import {
   ContactSection,
   DateSection,
   InvitationSection,
-  LocationSection,
 } from './components/Sections';
 import { MediaGallerySection, MediaHeroSection } from './components/MediaSections';
 import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
+import { LocationSection } from './components/LocationSection';
 import { MusicControl } from './components/MusicControl';
 import { wedding } from './data/wedding';
 import { emptyMediaState, fetchPublicMedia } from './utils/media';
