@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import AdminApp from './admin/AdminApp';
 import './styles/global.css';
+import './styles/hero-typography.css';
 import './styles/features.css';
 import './styles/forms.css';
 import './styles/map.css';
