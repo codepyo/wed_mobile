@@ -5,6 +5,7 @@ import AdminApp from './admin/AdminApp';
 import './styles/global.css';
 import './styles/features.css';
 import './styles/forms.css';
+import './styles/map.css';
 import './styles/admin.css';
 import './styles/admin-media.css';
 import './styles/admin-responsive.css';
