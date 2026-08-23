@@ -111,25 +111,12 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [~] 장기 개선: RSVP/Guestbook server-side pagination 또는 cursor pagination 적용 예정
 - [~] Production에서 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 재검증 필요
 
-### 확인된 Backlog
+## 2026-08-23 — R2 Media 기반
 
-- [ ] 모바일 브라우저 강제 Dark Mode 대응
-- [ ] 실제 Kakao Map SDK 적용
-- [ ] RSVP 상세 필터/수정/restore/server-side pagination
-- [ ] Guestbook restore/CSV export/server-side pagination
-- [ ] Preview Worker와 Preview D1 완전 분리
-- [~] R2 Media 관리 기반 구현 진행 중
-- [ ] 실제 웨딩 사진/연락처/계좌/BGM 입력
-- [ ] Kakao Share Production 설정 및 OG 이미지
-- [ ] custom domain
-- [ ] 최종 Android/iOS/Kakao 인앱 QA
-
-## 다음 개발 — R2 Media 관리
-
-관리자에서 실제 사진/공유 이미지/BGM을 교체할 수 있도록 Cloudflare R2 기반 media layer를 구축한다.
-
-현재 코드 진행:
-
+- [x] Production R2 bucket `wedding-media-production` 생성
+- [x] Preview R2 bucket `wedding-media-preview` 생성
+- [x] Worker binding `WEDDING_MEDIA`를 `wrangler.jsonc`에 추가
+- [x] Production bucket과 Preview bucket을 분리 설정
 - [x] Admin Media 메뉴
 - [x] `media_assets` 목록 API
 - [x] R2 연결 상태 표시
@@ -137,10 +124,25 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] MIME / 파일 크기 validation
 - [x] R2 upload 후 D1 실패 시 object rollback
 - [x] Media 업로드 audit log
-- [x] R2 binding 미구성 시 업로드 비활성화
-- [ ] Production/Preview R2 bucket 생성
-- [ ] Worker `WEDDING_MEDIA` binding 연결
+- [ ] Production 배포 후 `WEDDING_MEDIA` binding 인식 확인
 - [ ] 실제 Hero/Gallery/OG/BGM 업로드 검증
 - [ ] 공개 청첩장에서 active media asset 사용
 - [ ] Gallery reorder / focal point editor
 - [ ] 기존 파일 비활성/삭제 정책
+
+### 확인된 Backlog
+
+- [ ] 모바일 브라우저 강제 Dark Mode 대응
+- [ ] 실제 Kakao Map SDK 적용
+- [ ] RSVP 상세 필터/수정/restore/server-side pagination
+- [ ] Guestbook restore/CSV export/server-side pagination
+- [ ] Preview Worker와 Preview D1/R2 완전 분리 검증
+- [~] R2 Media 관리 구현 진행 중
+- [ ] 실제 웨딩 사진/연락처/계좌/BGM 입력
+- [ ] Kakao Share Production 설정 및 OG 이미지
+- [ ] custom domain
+- [ ] 최종 Android/iOS/Kakao 인앱 QA
+
+## 다음 개발
+
+R2 Media PR을 Production 배포한 뒤 Admin Media에서 실제 파일 업로드를 검증하고, 다음으로 공개 청첩장이 D1 `media_assets`의 active asset을 읽어 Hero/Gallery/OG/BGM에 반영하도록 연결한다.
