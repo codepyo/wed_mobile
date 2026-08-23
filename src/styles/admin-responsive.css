@@ -1,0 +1,49 @@
+.admin-shell { overflow-x: hidden; }
+.admin-layout,
+.admin-main,
+.admin-panel,
+.admin-table-panel,
+.admin-table-wrap { min-width: 0; }
+
+.admin-table-panel { max-width: 100%; overflow: hidden; }
+.admin-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(65dvh, 620px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-table th { z-index: 1; }
+
+@media (max-width: 900px) {
+  .admin-layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-sidebar {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    align-items: center;
+    align-content: center;
+    flex-wrap: nowrap;
+  }
+  .admin-sidebar button,
+  .admin-sidebar span {
+    height: 40px;
+    min-height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .admin-grid-two { grid-template-columns: minmax(0, 1fr); }
+  .admin-table-wrap { max-height: min(60dvh, 520px); }
+}
+
+@media (max-width: 520px) {
+  .admin-main { width: 100%; max-width: 100vw; }
+  .admin-table-panel { width: 100%; max-width: 100%; }
+  .admin-table-wrap { max-width: calc(100vw - 32px); }
+}

@@ -43,11 +43,38 @@ type SettingsData = {
   musicEnabled: boolean;
 };
 
-type View = 'dashboard' | 'rsvp' | 'guestbook' | 'settings';
+type MediaAsset = {
+  id: string;
+  slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | string;
+  object_key: string;
+  mime_type: string;
+  size_bytes: number;
+  width?: number | null;
+  height?: number | null;
+  object_position?: string | null;
+  alt_text?: string | null;
+  sort_order?: number | null;
+  active: number;
+  created_at: string;
+};
+
+type MediaData = {
+  bucketConfigured: boolean;
+  limits?: { imageBytes?: number; audioBytes?: number };
+  assets: MediaAsset[];
+};
+
+type View = 'dashboard' | 'rsvp' | 'guestbook' | 'media' | 'settings';
 
 const number = (value?: number) => Number(value ?? 0).toLocaleString('ko-KR');
 const sideLabel = (value?: string | null) => value === 'GROOM' ? '신랑측' : value === 'BRIDE' ? '신부측' : '-';
 const dateLabel = (value: string) => new Date(value).toLocaleString('ko-KR');
+const bytesLabel = (value?: number) => {
+  const bytes = Number(value || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+};
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { cache: 'no-store', ...init });
@@ -70,6 +97,7 @@ export default function AdminApp() {
   const [rsvpItems, setRsvpItems] = useState<RsvpItem[]>([]);
   const [guestbookItems, setGuestbookItems] = useState<GuestbookItem[]>([]);
   const [settings, setSettings] = useState<SettingsData | null>(null);
+  const [media, setMedia] = useState<MediaData | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
@@ -100,6 +128,11 @@ export default function AdminApp() {
     setSettings(payload);
   };
 
+  const loadMedia = async () => {
+    const payload = await api<MediaData>('/api/admin/media');
+    setMedia({ ...payload, assets: payload.assets || [] });
+  };
+
   const load = async () => {
     setLoading(true);
     setError('');
@@ -108,6 +141,7 @@ export default function AdminApp() {
       if (view === 'dashboard') await loadDashboard();
       if (view === 'rsvp') await loadRsvp();
       if (view === 'guestbook') await loadGuestbook();
+      if (view === 'media') await loadMedia();
       if (view === 'settings') await loadSettings();
     } catch {
       setError('관리자 데이터를 불러오지 못했습니다. Cloudflare Access와 D1 연결 상태를 확인해 주세요.');
@@ -118,8 +152,8 @@ export default function AdminApp() {
 
   useEffect(() => { void load(); }, [view]);
 
-  const title = view === 'dashboard' ? '결혼식 운영 현황' : view === 'rsvp' ? 'RSVP 응답 관리' : view === 'guestbook' ? '방명록 관리' : '공개 기능 설정';
-  const eyebrow = view === 'dashboard' ? 'OVERVIEW' : view === 'rsvp' ? 'RSVP' : view === 'guestbook' ? 'GUESTBOOK' : 'SETTINGS';
+  const title = view === 'dashboard' ? '결혼식 운영 현황' : view === 'rsvp' ? 'RSVP 응답 관리' : view === 'guestbook' ? '방명록 관리' : view === 'media' ? '미디어 관리' : '공개 기능 설정';
+  const eyebrow = view === 'dashboard' ? 'OVERVIEW' : view === 'rsvp' ? 'RSVP' : view === 'guestbook' ? 'GUESTBOOK' : view === 'media' ? 'MEDIA' : 'SETTINGS';
   const attendingPeople = useMemo(() => rsvpItems.reduce((sum, item) => sum + (item.attendance === 'YES' ? Number(item.guest_count || 0) : 0), 0), [rsvpItems]);
 
   const rsvpDelete = async (item: RsvpItem) => {
@@ -180,6 +214,35 @@ export default function AdminApp() {
     }
   };
 
+  const uploadMedia = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (saving) return;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const file = form.get('file');
+    if (!(file instanceof File) || !file.size) {
+      setError('업로드할 파일을 선택해 주세요.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const response = await fetch('/api/admin/media', { method: 'POST', body: form });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(String(payload.error || 'UPLOAD_FAILED'));
+      formElement.reset();
+      setMedia((current) => current ? { ...current, assets: payload.assets || current.assets } : current);
+      setNotice('미디어를 업로드했습니다.');
+      await loadDashboard();
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      setError(code === 'R2_NOT_CONFIGURED' ? 'Cloudflare R2 bucket binding이 아직 연결되지 않았습니다.' : '미디어 업로드에 실패했습니다. 파일 형식과 크기를 확인해 주세요.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportRsvpCsv = () => {
     const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
     const rows = [
@@ -206,7 +269,7 @@ export default function AdminApp() {
           <button className={view === 'dashboard' ? 'is-active' : ''} onClick={() => setView('dashboard')}>Dashboard</button>
           <button className={view === 'rsvp' ? 'is-active' : ''} onClick={() => setView('rsvp')}>RSVP</button>
           <button className={view === 'guestbook' ? 'is-active' : ''} onClick={() => setView('guestbook')}>Guestbook</button>
-          <span>Media</span>
+          <button className={view === 'media' ? 'is-active' : ''} onClick={() => setView('media')}>Media</button>
           <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>Settings</button>
           <span>System</span>
         </aside>
@@ -243,6 +306,28 @@ export default function AdminApp() {
           </>}
 
           {view === 'guestbook' && <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>메시지</th><th>상태</th><th>등록일</th><th></th></tr></thead><tbody>{guestbookItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td className="admin-table__message">{item.message}</td><td>{item.visible ? '공개' : '숨김'}</td><td>{dateLabel(item.created_at)}</td><td><div className="admin-row-actions"><button onClick={() => void guestbookAction(item, item.visible ? 'HIDE' : 'SHOW')}>{item.visible ? '숨김' : '공개'}</button><button className="admin-danger" onClick={() => void guestbookAction(item, 'DELETE')}>삭제</button></div></td></tr>)}</tbody></table></div>{!guestbookItems.length && <p className="admin-empty">조회된 방명록이 없습니다.</p>}</section>}
+
+          {view === 'media' && media && <>
+            <section className="admin-panel">
+              <div className="admin-panel__head"><div><small>R2 STORAGE</small><h3>미디어 저장소</h3></div></div>
+              <div className="admin-media-status"><strong>{media.bucketConfigured ? 'R2 연결됨' : 'R2 연결 전'}</strong><span>{media.bucketConfigured ? '새 미디어를 업로드할 수 있습니다.' : 'WEDDING_MEDIA R2 binding을 연결하면 업로드가 활성화됩니다.'}</span></div>
+            </section>
+            <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}>
+              <div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div>
+              <div className="admin-media-fields">
+                <label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="BGM">BGM 음원</option></select></label>
+                <label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label>
+                <label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label>
+                <label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label>
+                <label><span>Gallery 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label>
+              </div>
+              <div className="admin-settings-actions"><button type="submit" disabled={saving || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div>
+            </form>
+            <section className="admin-panel admin-table-panel">
+              <div className="admin-table-wrap"><table className="admin-table admin-table--media"><thead><tr><th>용도</th><th>상태</th><th>파일</th><th>형식</th><th>크기</th><th>순서</th><th>등록일</th></tr></thead><tbody>{media.assets.map((item) => <tr key={item.id}><td><strong>{item.slot}</strong></td><td>{item.active ? '사용 중' : '이전 버전'}</td><td className="admin-table__message">{item.object_key}</td><td>{item.mime_type}</td><td>{bytesLabel(item.size_bytes)}</td><td>{item.sort_order ?? '-'}</td><td>{dateLabel(item.created_at)}</td></tr>)}</tbody></table></div>
+              {!media.assets.length && <p className="admin-empty">등록된 미디어가 없습니다.</p>}
+            </section>
+          </>}
 
           {view === 'settings' && settings && <form className="admin-settings" onSubmit={saveSettings}>
             <section className="admin-panel">
