@@ -1,0 +1,1 @@
+Kakao JavaScript build variable configured in Cloudflare on 2026-08-23. This file intentionally triggers a production rebuild so the Vite build can embed VITE_KAKAO_JS_KEY.
