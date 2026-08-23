@@ -39,32 +39,37 @@ function loadKakaoMapSdk(appKey: string): Promise<KakaoMapApi> {
     });
   }
 
-  if (kakaoMapSdkPromise) return kakaoMapSdkPromise;
+  if (!kakaoMapSdkPromise) {
+    kakaoMapSdkPromise = new Promise<KakaoMapApi>((resolve, reject) => {
+      const finish = () => {
+        if (!window.kakao?.maps) {
+          reject(new Error('KAKAO_MAP_SDK_UNAVAILABLE'));
+          return;
+        }
+        window.kakao.maps.load(() => resolve(window.kakao!.maps));
+      };
+      const fail = () => reject(new Error('KAKAO_MAP_SDK_LOAD_FAILED'));
+      const existing = document.getElementById(KAKAO_MAP_SDK_ID) as HTMLScriptElement | null;
 
-  kakaoMapSdkPromise = new Promise<KakaoMapApi>((resolve, reject) => {
-    const finish = () => {
-      if (!window.kakao?.maps) {
-        reject(new Error('KAKAO_MAP_SDK_UNAVAILABLE'));
+      if (existing) {
+        existing.addEventListener('load', finish, { once: true });
+        existing.addEventListener('error', fail, { once: true });
         return;
       }
-      window.kakao.maps.load(() => resolve(window.kakao!.maps));
-    };
 
-    const existing = document.getElementById(KAKAO_MAP_SDK_ID) as HTMLScriptElement | null;
-    if (existing) {
-      existing.addEventListener('load', finish, { once: true });
-      existing.addEventListener('error', () => reject(new Error('KAKAO_MAP_SDK_LOAD_FAILED')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = KAKAO_MAP_SDK_ID;
-    script.async = true;
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false`;
-    script.onload = finish;
-    script.onerror = () => reject(new Error('KAKAO_MAP_SDK_LOAD_FAILED'));
-    document.head.appendChild(script);
-  });
+      const script = document.createElement('script');
+      script.id = KAKAO_MAP_SDK_ID;
+      script.async = true;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false`;
+      script.onload = finish;
+      script.onerror = fail;
+      document.head.appendChild(script);
+    }).catch((error) => {
+      kakaoMapSdkPromise = null;
+      document.getElementById(KAKAO_MAP_SDK_ID)?.remove();
+      throw error;
+    });
+  }
 
   return kakaoMapSdkPromise;
 }
@@ -78,6 +83,7 @@ type Props = {
 export function KakaoMap({ latitude, longitude, venue }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     const appKey = import.meta.env.VITE_KAKAO_JS_KEY as string | undefined;
@@ -114,7 +120,7 @@ export function KakaoMap({ latitude, longitude, venue }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [latitude, longitude]);
+  }, [latitude, longitude, retryKey]);
 
   return (
     <div className="map-preview kakao-map" aria-label={`${venue} 위치 지도`}>
@@ -123,7 +129,11 @@ export function KakaoMap({ latitude, longitude, venue }: Props) {
         <div className="kakao-map__fallback" aria-live="polite">
           <div className="map-preview__grid" aria-hidden="true" />
           <div className="map-preview__pin" aria-hidden="true"><span /></div>
-          <span>{status === 'loading' ? 'MAP LOADING' : 'MAP UNAVAILABLE'}</span>
+          {status === 'loading' ? (
+            <span>MAP LOADING</span>
+          ) : (
+            <button type="button" className="kakao-map__retry" onClick={() => setRetryKey((value) => value + 1)}>지도 다시 불러오기</button>
+          )}
         </div>
       )}
       {status === 'ready' && (
