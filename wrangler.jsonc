@@ -17,5 +17,12 @@
       "database_id": "fe92ba88-91fd-4c8a-9a42-1ee6909ba64c",
       "preview_database_id": "2274b0eb-1a9c-49bf-a219-90ca686a5d97"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "WEDDING_MEDIA",
+      "bucket_name": "wedding-media-production",
+      "preview_bucket_name": "wedding-media-preview"
+    }
   ]
 }
