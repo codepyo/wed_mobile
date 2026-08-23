@@ -7,6 +7,7 @@ import './styles/hero-typography.css';
 import './styles/features.css';
 import './styles/forms.css';
 import './styles/map.css';
+import './styles/quality.css';
 import './styles/admin.css';
 import './styles/admin-media.css';
 import './styles/admin-responsive.css';
