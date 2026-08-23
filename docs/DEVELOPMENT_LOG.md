@@ -2,221 +2,206 @@
 
 최종 업데이트: 2026-08-23
 
-## 현재 상태
-
-Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings, R2 Media 업로드 및 공개 미디어 전달 기반까지 구현 완료.
-
 Production: `https://wed-mobile.robin5544.workers.dev`
 
-현재 R2 Media는 관리자에서 파일 업로드가 정상 동작하며, active `HERO` / `GALLERY` / `BGM` asset을 공개 청첩장이 자동으로 읽어 사용하는 구조까지 연결되어 있다. Gallery의 최종 레이아웃, 사진 배치 순서, focal point 세부 조정과 파일 정리 기능은 실제 사진 구성이 확정된 뒤 후순위로 진행한다.
+## 현재 상태
 
-## 2026-08-22 — Production / D1 / Turnstile / Admin
+모바일 청첩장의 핵심 서비스 기반은 대부분 완성되었다.
 
-### Cloudflare Workers 배포
+- Cloudflare Workers Production 배포
+- D1 기반 RSVP / Guestbook / Settings / Audit
+- Turnstile 보안 검증
+- Cloudflare Access 기반 `/admin`, `/api/admin/*` 보호
+- 관리자 Dashboard / RSVP / Guestbook / Settings / Media
+- R2 기반 Hero / Gallery / OG / BGM 업로드
+- private R2 미디어 공개 전달 API
+- Hero / Gallery / BGM 공개 화면 연결
+- Open Graph / KakaoTalk 공유 기능
+- Kakao Map Web SDK 지도 구현 및 Production 배포
 
-- [x] GitHub `main` 기반 Workers 자동 build/deploy
-- [x] Vite 정적 자산 + Pages Functions worker bundle 통합
+현재는 신규 기반 기능 개발보다 **실제 콘텐츠 입력, 지도 실화면 확인, custom domain, 모바일 최종 QA** 단계에 가깝다.
+
+---
+
+## 2026-08-22 — Production / 데이터 / 관리자 기반
+
+### Cloudflare Workers
+
+- [x] GitHub `main` 기반 자동 build/deploy
+- [x] Vite 정적 자산 + Functions Worker bundle 통합
 - [x] `/api/*` worker-first 라우팅
-- [x] SPA fallback으로 `/admin` 직접 접근/새로고침 정상
+- [x] SPA fallback 및 `/admin` 직접 접근/새로고침
 
 ### D1
 
-- [x] Production DB `wedding-db-production` 생성
-- [x] Preview DB `wedding-db-preview` 생성
-- [x] `database/schema.sql` 양쪽 적용
-- [x] Production `WEDDING_DB` binding 연결
-- [x] `site_settings`, `rsvp`, `guestbook`, `media_assets`, `admin_audit_log` 테이블 확인
-- [x] `/api/site-config` Production 조회 검증
-- [x] RSVP INSERT 검증
-- [x] Guestbook INSERT/조회/사용자 삭제 검증
+- [x] Production DB `wedding-db-production`
+- [x] Preview DB `wedding-db-preview`
+- [x] `site_settings`, `rsvp`, `guestbook`, `media_assets`, `admin_audit_log`
+- [x] Production binding `WEDDING_DB`
+- [x] RSVP / Guestbook 실제 저장 검증
 - [x] 한글 UTF-8 저장 검증
 
 ### Turnstile
 
-- [x] Production Turnstile widget 생성
-- [x] Build variable `VITE_TURNSTILE_SITE_KEY` 연결
-- [x] Runtime secret `TURNSTILE_SECRET_KEY` 연결
-- [x] `/api/site-config`의 `turnstileEnabled=true` 확인
-- [x] RSVP action=`rsvp` Siteverify 성공
-- [x] Guestbook action=`guestbook` Siteverify 성공
-- [x] token 미발급 상태 제출 차단
-- [x] expired/timeout/error 상태 처리 및 진단 UI 추가
-- [x] 실제 브라우저에서 `보안 확인이 완료되었습니다.` 확인
+- [x] Production widget 및 runtime secret 연결
+- [x] RSVP / Guestbook Siteverify 검증
+- [x] token 만료/오류 처리
+- [x] 실제 브라우저 보안 확인 완료
 
-### 공개 RSVP / Guestbook
+### Cloudflare Access / Admin
 
-- [x] RSVP feature flag 활성화
-- [x] Guestbook feature flag 활성화
-- [x] RSVP 실제 등록 및 D1 저장 확인
-- [x] Guestbook 실제 등록 및 공개 목록 반영 확인
-- [x] React async submit 이후 `event.currentTarget.reset()` 예외 수정
-- [x] 성공 저장 후 UI에서 실패로 보이던 문제 수정
+- [x] `/admin*` 보호
+- [x] `/api/admin/*` 보호
+- [x] Dashboard KPI / audit
+- [x] RSVP 검색 / 삭제 / CSV
+- [x] Guestbook 검색 / hide-show / 삭제
+- [x] Settings: RSVP / Guestbook / BGM ON-OFF
+- [x] Admin mutation audit log
 
-### Cloudflare Access
+---
 
-- [x] Zero Trust Free 조직 구성
-- [x] Self-hosted Access Application 생성
-- [x] `wed-mobile.robin5544.workers.dev/admin*` 보호
-- [x] `wed-mobile.robin5544.workers.dev/api/admin/*` 보호
-- [x] 동일 Application 안에 두 destination 구성
-- [x] Wedding Admin Allow 정책 적용
-- [x] cookie path attribute OFF 확인
-- [x] `/api/admin/dashboard` 인증 후 JSON 정상 응답 확인
-- [x] `/admin` Admin UI 정상 조회 확인
+## 2026-08-23 — 관리자 모바일 안정화
 
-### Admin Dashboard / RSVP / Guestbook
+- [x] RSVP / Guestbook 진입 시 전체 페이지 가로 overflow 수정
+- [x] table wrapper 내부 스크롤로 격리
+- [x] 모바일 Admin navigation 높이 안정화
+- [x] 긴 목록의 페이지 전체 세로 확장 완화
+- [~] 장기 개선: RSVP / Guestbook server-side pagination
+- [ ] 최종 QA에서 320~430px 주요 viewport 재확인
 
-- [x] Dashboard KPI
-- [x] 신랑측/신부측 예상 참석 인원
-- [x] 방명록 상태 KPI
-- [x] 최근 관리자 작업 audit 표시
-- [x] RSVP 목록
-- [x] RSVP 검색
-- [x] RSVP 삭제
-- [x] RSVP UTF-8 BOM CSV export
-- [x] Guestbook 목록
-- [x] Guestbook 검색
-- [x] Guestbook hide/show
-- [x] Guestbook 삭제
-- [x] Admin mutation audit log 기록
-- [x] 실제 Production CRUD/Admin UI 동작 확인
-
-### Admin Settings / Operations
-
-- [x] RSVP ON/OFF
-- [x] RSVP 마감 일시 설정
-- [x] Guestbook 전체 ON/OFF
-- [x] Guestbook 신규 작성 ON/OFF
-- [x] BGM ON/OFF
-- [x] D1 `site_settings` 즉시 반영
-- [x] 설정 변경 `SETTINGS_UPDATE` audit log 기록
-- [x] Dashboard 최근 관리자 작업 반영 확인
-- [x] 실제 Production 저장/조회 동작 검증
-
-## 2026-08-23 — Admin 모바일 레이아웃 안정화
-
-### 가로 overflow
-
-- [x] Chrome DevTools 모바일 device frame에서 RSVP/Guestbook 진입 시 페이지 전체가 viewport보다 가로로 확장되는 현상 확인
-- 원인: 넓은 관리자 테이블(`min-width: 860px`)과 CSS Grid/Flex 자식의 기본 `min-width:auto` 조합으로 상위 layout의 최소 너비가 밀려남
-- [x] `.admin-layout`, `.admin-main`, `.admin-panel`, `.admin-table-panel`, `.admin-table-wrap`에 `min-width:0` / `max-width:100%` containment 적용
-- [x] 페이지 전체는 viewport에 고정하고 table wrapper 내부에서만 좌우 스크롤하도록 수정
-- [x] Production 배포 후 가로 overflow 개선 확인
-
-### RSVP/Guestbook 진입 시 세로로 길게 늘어나는 현상
-
-- [x] 모바일 device frame에서 RSVP/Guestbook 탭 진입 시 화면이 지나치게 세로로 길어지는 현상 추가 확인
-- 원인 1: 목록 API를 최대 500건까지 한 번에 받아 모든 행을 DOM에 렌더링하는 구조
-- 원인 2: 모바일 admin table에 세로 높이 제한이 없어 row 수만큼 페이지 전체 높이가 증가
-- [x] table wrapper에 `max-height` + 내부 `overflow:auto`를 적용해 목록 스크롤을 페이지 전체와 분리
-- [x] 모바일 상단 Admin navigation을 56px 고정 높이, 각 메뉴를 40px 고정 높이로 보정해 active 탭이 세로로 늘어나지 않도록 처리
-- [~] 장기 개선: RSVP/Guestbook server-side pagination 또는 cursor pagination 적용 예정
-- [~] Production에서 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 최종 QA 필요
+---
 
 ## 2026-08-23 — R2 Media
 
-### 저장/관리 기반
+### 저장 / 업로드
 
-- [x] Production R2 bucket `wedding-media-production` 생성
-- [x] Preview R2 bucket `wedding-media-preview` 생성
-- [x] Worker binding `WEDDING_MEDIA`를 `wrangler.jsonc`에 추가
-- [x] Production bucket과 Preview bucket 분리 설정
+- [x] Production R2 `wedding-media-production`
+- [x] Preview R2 `wedding-media-preview`
+- [x] Worker binding `WEDDING_MEDIA`
 - [x] Admin Media 메뉴
-- [x] `media_assets` 목록 API
-- [x] R2 연결 상태 표시
-- [x] Hero / Gallery / OG / BGM 업로드 API 기반
+- [x] Hero / Gallery / OG / BGM 업로드
 - [x] MIME / 파일 크기 validation
-- [x] R2 upload 후 D1 실패 시 object rollback
-- [x] Media 업로드 audit log
-- [x] Production에서 `WEDDING_MEDIA` binding 인식 확인
-- [x] 실제 이미지 R2 업로드 및 D1 `media_assets` 등록 동작 확인
+- [x] R2 업로드 후 D1 실패 시 rollback
+- [x] Media audit log
+- [x] 실제 이미지 업로드 동작 확인
 
-### 공개 미디어 전달
+### 공개 전달
 
-- [x] private R2 유지 — bucket Public URL 비활성 구조 유지
-- [x] `/api/media` active asset manifest API 구현
-- [x] `/api/media/:id` active asset R2 streaming API 구현
-- [x] UUID asset URL에 장기 immutable cache 적용
-- [x] 공개 Hero가 active `HERO` asset을 우선 사용하도록 구현
-- [x] 공개 Gallery가 active `GALLERY` asset을 `sort_order` 순으로 자동 사용하도록 구현
-- [x] BGM이 active `BGM` asset + `music_enabled` 설정을 사용하도록 구현
-- [x] Gallery 사진은 Admin Media에서 `GALLERY`로 업로드하면 공개 Gallery 데이터에 자동 포함되는 구조 구현
+- [x] R2 bucket private 유지
+- [x] `/api/media` active asset manifest
+- [x] `/api/media/:id` R2 streaming
+- [x] UUID asset 장기 cache
+- [x] active Hero 공개 화면 자동 반영
+- [x] Gallery 업로드 시 공개 Gallery 자동 포함
+- [x] Gallery `sort_order` 기준 정렬
+- [x] active BGM + `music_enabled` 연동
 
-### Media 후순위 개선
+### 실제 사진 확정 후 후순위
 
-실제 웨딩 사진 구성이 확정된 뒤 한 번에 조정한다.
+- [ ] Gallery 최종 전체 레이아웃
+- [ ] Gallery reorder UI
+- [ ] 사진 focal point / object-position 편집 UI
+- [ ] Hero / Gallery crop 세부 튜닝
+- [ ] Media object 비활성 / 삭제 / 버전 관리
+- [ ] width / height metadata 자동 추출
 
-- [ ] Gallery 최종 전체 레이아웃 조정
-- [ ] Gallery 사진별 최종 표시 순서 조정 UI
-- [ ] 사진별 focal point / object-position 편집 UI
-- [ ] Hero/Gallery 실제 화면 비율 및 crop 세부 튜닝
-- [ ] 기존 파일 비활성/삭제/버전 정리 정책
-- [ ] 이미지 width/height metadata 자동 추출 및 관리
+---
 
-## 2026-08-23 — OG / Kakao 공유
+## 2026-08-23 — OG / KakaoTalk 공유
 
-### 공유 코드 기반
+### 구현 및 설정
 
-- [x] HTML Open Graph title / description / image / url 메타태그 추가
-- [x] Twitter summary_large_image 메타태그 추가
-- [x] `/api/og-image` 고정 공개 이미지 endpoint 구현
-- [x] active `OG` 이미지가 있으면 공유 이미지로 사용
-- [x] active `OG`가 없으면 active `HERO` 이미지를 자동 fallback으로 사용
-- [x] R2 bucket은 비공개 상태를 유지하고 Worker가 공유 이미지를 전달
-- [x] Kakao Share `sendDefault`의 imageUrl을 `/api/og-image`로 통일
+- [x] Open Graph title / description / image / url
+- [x] Twitter `summary_large_image`
+- [x] `/api/og-image` 고정 공유 이미지 endpoint
+- [x] active `OG` 우선, 없으면 active `HERO` fallback
+- [x] Kakao Share `sendDefault`
 - [x] Kakao 공유 링크를 청첩장 root URL로 정규화
-- [x] Kakao SDK/키 미구성 또는 오류 시 Web Share / URL 복사 fallback 유지
-- [ ] Cloudflare Build Variable `VITE_KAKAO_JS_KEY` 설정
-- [ ] Kakao Developers Web 플랫폼에 Production domain 등록 확인
-- [ ] 실제 OG 전용 이미지 업로드
-- [ ] KakaoTalk 실제 공유 카드 제목/설명/이미지 검증
+- [x] Kakao 오류 시 Web Share / URL 복사 fallback
+- [x] Kakao Developers 앱 / JavaScript Key 생성
+- [x] JavaScript SDK Production domain 등록
+- [x] 제품 링크 Web domain 등록
+- [x] Cloudflare Build Variable `VITE_KAKAO_JS_KEY` 등록
+- [x] 새 Production build로 JavaScript Key 반영
+- [x] 실제 KakaoTalk 공유 카드 노출 확인
+- [x] OG 미등록 상태에서 Hero 사진 fallback 확인
 
-## 남은 개발 작업
+### 선택적 마무리
 
-### 우선순위 1 — 공유 기능 마무리
+- [ ] Admin Media에 공유 전용 `OG` 이미지 업로드
+- [ ] custom domain 적용 후 `og:url`, Kakao domain 설정 변경
 
-- [ ] Kakao Developers 앱 생성/기존 앱 확인
-- [ ] JavaScript Key 확인 후 Cloudflare `VITE_KAKAO_JS_KEY` 등록
-- [ ] Kakao Web 플랫폼 domain에 `https://wed-mobile.robin5544.workers.dev` 등록
-- [ ] Admin Media에서 OG 이미지 업로드
-- [ ] KakaoTalk 실제 공유 카드 검증
-- [ ] custom domain 확정 시 Kakao domain 및 `og:url`을 custom domain으로 변경
+공유 기능 자체는 현재 실사용 가능한 상태다.
 
-### 우선순위 2 — 실제 청첩장 콘텐츠 완성
+---
+
+## 2026-08-23 — Kakao Map
+
+### 구현
+
+- [x] 기존 장식용 map placeholder 제거
+- [x] Kakao Map Web SDK 컴포넌트 구현
+- [x] 기존 `VITE_KAKAO_JS_KEY` 재사용
+- [x] 라마다프라자수원호텔 좌표 중심 설정
+- [x] 호텔 marker 표시
+- [x] 모바일 스크롤 방해 방지를 위해 지도 drag / wheel zoom 비활성화
+- [x] Kakao SDK 실패 시 fallback UI 유지
+- [x] 카카오맵 / 네이버지도 / 주소 복사 외부 동작 유지
+- [x] CI 통과 및 Production 배포
+
+### 남은 확인
+
+- [ ] Kakao Developers의 Kakao Map 이용 설정 ON 확인
+- [ ] Production에서 실제 지도 tile / marker 표시 확인
+- [ ] 모바일에서 지도 구간 스크롤 UX 확인
+- [ ] 카카오맵 / 네이버지도 / TMAP 링크 최종 검수
+
+---
+
+# 다음 할 일
+
+## 1. 바로 확인할 것
+
+- [ ] Production 오시는 길에서 실제 Kakao Map 표시 확인
+- [ ] 지도 marker 위치 확인
+- [ ] 모바일 스크롤 시 지도 영역이 화면 이동을 방해하지 않는지 확인
+
+## 2. 실제 청첩장 콘텐츠 입력
 
 - [ ] 실제 Gallery 웨딩 사진 업로드
-- [ ] 신랑/신부 및 혼주 연락처 입력 후 Contact 기능 활성화
-- [ ] 신랑측/신부측 계좌 정보 입력 후 Account 기능 활성화
-- [ ] 최종 BGM 파일 업로드 및 재생 검증
-- [ ] 문구/교통/주차 등 최종 콘텐츠 검수
+- [ ] 신랑 / 신부 / 혼주 연락처 입력 및 Contact 활성화
+- [ ] 신랑측 / 신부측 계좌 정보 입력 및 Account 활성화
+- [ ] 최종 BGM 업로드 및 재생 검증
+- [ ] 문구 / 교통 / 주차 안내 최종 검수
+- [ ] 필요 시 공유 전용 OG 이미지 업로드
 
-### 우선순위 3 — 위치/지도
+## 3. 공개 주소 확정
 
-- [ ] 현재 placeholder map을 실제 Kakao Map SDK로 교체
-- [ ] 호텔 위치 marker 및 모바일 지도 동작 검증
-- [ ] 카카오맵/네이버지도/TMAP 이동 링크 최종 검수
+- [ ] custom domain 선정 및 Cloudflare 연결
+- [ ] custom domain HTTPS / redirect 확인
+- [ ] Kakao JavaScript SDK domain에 custom domain 추가
+- [ ] Kakao 제품 링크 Web domain에 custom domain 추가
+- [ ] `og:url` 및 공유 링크를 custom domain 기준으로 변경
 
-### 우선순위 4 — 관리자 운영 편의 기능
+## 4. 최종 모바일 QA
 
-- [ ] RSVP 상세 필터
-- [ ] RSVP 수정 / restore
-- [ ] RSVP server-side 또는 cursor pagination
-- [ ] Guestbook restore
-- [ ] Guestbook CSV export
-- [ ] Guestbook server-side 또는 cursor pagination
+- [ ] Android Chrome
+- [ ] iPhone Safari
+- [ ] KakaoTalk 인앱 브라우저
+- [ ] 강제 Dark Mode 대응
+- [ ] Hero / Gallery 이미지 용량 및 로딩 성능
+- [ ] RSVP / Guestbook / 공유 / 지도 / BGM 전체 회귀 테스트
+
+## 5. 운영 편의 기능 — 필요할 때
+
+- [ ] RSVP 상세 필터 / 수정 / restore
+- [ ] RSVP server-side pagination
+- [ ] Guestbook restore / CSV export
+- [ ] Guestbook server-side pagination
 - [ ] Media Gallery reorder / focal point editor
-- [ ] Media object 삭제/버전 관리
+- [ ] Media object 삭제 / 버전 관리
+- [ ] Preview Worker + Preview D1/R2 완전 분리 검증
 
-### 우선순위 5 — 배포 안전성과 최종 QA
+## 권장 진행 순서
 
-- [ ] Preview Worker와 Preview D1/R2 완전 분리 검증
-- [ ] 모바일 브라우저 강제 Dark Mode 대응
-- [ ] Android Chrome 실제 기기 QA
-- [ ] iPhone Safari 실제 기기 QA
-- [ ] KakaoTalk 인앱 브라우저 QA
-- [ ] RSVP/Guestbook/공유/지도/BGM 전체 회귀 테스트
-- [ ] 이미지 용량/로딩 성능 최종 점검
-
-## 다음 개발 권장 순서
-
-현재 공유 기능의 코드 기반은 완성 단계다. 다음은 `Kakao JavaScript Key + Web domain 설정 → OG 전용 이미지 업로드 → 실제 KakaoTalk 공유 검증`을 끝낸 뒤 `실제 지도 → custom domain → 모바일 최종 QA` 순서로 진행한다.
+`Kakao Map Production 확인 → 실제 연락처/계좌/BGM/사진 입력 → custom domain → Android/iPhone/Kakao 인앱 최종 QA → Gallery/관리자 세부 편의 기능`
