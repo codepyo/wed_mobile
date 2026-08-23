@@ -11,6 +11,7 @@ export function MusicControl({ src, title, enabled }: Props = {}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const resolvedSrc = src ?? wedding.music.src;
   const resolvedEnabled = enabled ?? (wedding.features.music && Boolean(wedding.music.src));
@@ -18,6 +19,7 @@ export function MusicControl({ src, title, enabled }: Props = {}) {
   useEffect(() => {
     setPlaying(false);
     setReady(false);
+    setFailed(false);
     if (!resolvedEnabled || !resolvedSrc) return;
 
     const audio = new Audio(resolvedSrc);
@@ -28,20 +30,27 @@ export function MusicControl({ src, title, enabled }: Props = {}) {
     const onCanPlay = () => setReady(true);
     const onPause = () => setPlaying(false);
     const onPlay = () => setPlaying(true);
+    const onError = () => {
+      setPlaying(false);
+      setReady(false);
+      setFailed(true);
+    };
     audio.addEventListener('canplay', onCanPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('play', onPlay);
+    audio.addEventListener('error', onError);
 
     return () => {
       audio.pause();
       audio.removeEventListener('canplay', onCanPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('error', onError);
       audioRef.current = null;
     };
   }, [resolvedEnabled, resolvedSrc]);
 
-  if (!resolvedEnabled || !resolvedSrc) return null;
+  if (!resolvedEnabled || !resolvedSrc || failed) return null;
 
   const toggle = async () => {
     const audio = audioRef.current;
@@ -63,6 +72,7 @@ export function MusicControl({ src, title, enabled }: Props = {}) {
       className={`music-control ${playing ? 'is-playing' : ''}`}
       onClick={toggle}
       aria-label={playing ? '배경음악 일시정지' : '배경음악 재생'}
+      aria-pressed={playing}
       title={title || wedding.music.title || '배경음악'}
     >
       <span aria-hidden="true">♪</span>
