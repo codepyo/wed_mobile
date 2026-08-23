@@ -1,0 +1,44 @@
+.hero__identity h1 {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: clamp(5px, 1.5vw, 10px);
+  font-size: clamp(33px, 10.4vw, 54px);
+  line-height: .94;
+  letter-spacing: -.045em;
+}
+
+.hero__identity h1 span {
+  flex: 0 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.hero__identity h1 span:first-child {
+  text-align: left;
+}
+
+.hero__identity h1 span:last-child {
+  text-align: right;
+}
+
+.hero__identity h1 em {
+  flex: 0 0 auto;
+  margin-inline: clamp(1px, .35vw, 3px);
+  font-size: .48em;
+  line-height: 1;
+}
+
+@media (max-width: 360px) {
+  .hero__identity h1 {
+    gap: 4px;
+    font-size: clamp(31px, 10vw, 36px);
+    letter-spacing: -.055em;
+  }
+
+  .hero__eyebrow {
+    font-size: 10px;
+    letter-spacing: .15em;
+  }
+}
