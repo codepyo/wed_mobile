@@ -81,11 +81,35 @@ type Props = {
 };
 
 export function KakaoMap({ latitude, longitude, venue }: Props) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle');
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '480px 0px' },
+    );
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoad) return;
     const appKey = import.meta.env.VITE_KAKAO_JS_KEY as string | undefined;
     const container = containerRef.current;
     if (!appKey || !container) {
@@ -120,19 +144,24 @@ export function KakaoMap({ latitude, longitude, venue }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [latitude, longitude, retryKey]);
+  }, [latitude, longitude, retryKey, shouldLoad]);
+
+  const retry = () => {
+    setShouldLoad(true);
+    setRetryKey((value) => value + 1);
+  };
 
   return (
-    <div className="map-preview kakao-map" aria-label={`${venue} 위치 지도`}>
+    <div ref={rootRef} className="map-preview kakao-map" aria-label={`${venue} 위치 지도`}>
       <div ref={containerRef} className="kakao-map__canvas" />
       {status !== 'ready' && (
         <div className="kakao-map__fallback" aria-live="polite">
           <div className="map-preview__grid" aria-hidden="true" />
           <div className="map-preview__pin" aria-hidden="true"><span /></div>
-          {status === 'loading' ? (
-            <span>MAP LOADING</span>
+          {status === 'failed' ? (
+            <button type="button" className="kakao-map__retry" onClick={retry}>지도 다시 불러오기</button>
           ) : (
-            <button type="button" className="kakao-map__retry" onClick={() => setRetryKey((value) => value + 1)}>지도 다시 불러오기</button>
+            <span>{status === 'loading' ? 'MAP LOADING' : 'RAMADA PLAZA SUWON'}</span>
           )}
         </div>
       )}
