@@ -4,9 +4,11 @@
 
 ## 현재 상태
 
-Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings, R2 Media 업로드까지 실제 환경 검증 완료.
+Cloudflare Workers Production 배포 후 D1, Turnstile, Cloudflare Access, RSVP/Guestbook 관리자 운영 기능, Admin Settings, R2 Media 업로드 및 공개 미디어 전달 기반까지 구현 완료.
 
 Production: `https://wed-mobile.robin5544.workers.dev`
+
+현재 R2 Media는 관리자에서 파일 업로드가 정상 동작하며, active `HERO` / `GALLERY` / `BGM` asset을 공개 청첩장이 자동으로 읽어 사용하는 구조까지 연결되어 있다. Gallery의 최종 레이아웃, 사진 배치 순서, focal point 세부 조정과 파일 정리 기능은 실제 사진 구성이 확정된 뒤 후순위로 진행한다.
 
 ## 2026-08-22 — Production / D1 / Turnstile / Admin
 
@@ -109,7 +111,7 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] table wrapper에 `max-height` + 내부 `overflow:auto`를 적용해 목록 스크롤을 페이지 전체와 분리
 - [x] 모바일 상단 Admin navigation을 56px 고정 높이, 각 메뉴를 40px 고정 높이로 보정해 active 탭이 세로로 늘어나지 않도록 처리
 - [~] 장기 개선: RSVP/Guestbook server-side pagination 또는 cursor pagination 적용 예정
-- [~] Production에서 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 재검증 필요
+- [~] Production에서 320 / 344 / 360 / 375 / 390 / 393 / 412 / 430px 최종 QA 필요
 
 ## 2026-08-23 — R2 Media
 
@@ -118,7 +120,7 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] Production R2 bucket `wedding-media-production` 생성
 - [x] Preview R2 bucket `wedding-media-preview` 생성
 - [x] Worker binding `WEDDING_MEDIA`를 `wrangler.jsonc`에 추가
-- [x] Production bucket과 Preview bucket을 분리 설정
+- [x] Production bucket과 Preview bucket 분리 설정
 - [x] Admin Media 메뉴
 - [x] `media_assets` 목록 API
 - [x] R2 연결 상태 표시
@@ -127,7 +129,7 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] R2 upload 후 D1 실패 시 object rollback
 - [x] Media 업로드 audit log
 - [x] Production에서 `WEDDING_MEDIA` binding 인식 확인
-- [x] 실제 Hero 이미지 R2 업로드 및 D1 `media_assets` 등록 확인
+- [x] 실제 이미지 R2 업로드 및 D1 `media_assets` 등록 동작 확인
 
 ### 공개 미디어 전달
 
@@ -136,28 +138,66 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [x] `/api/media/:id` active asset R2 streaming API 구현
 - [x] UUID asset URL에 장기 immutable cache 적용
 - [x] 공개 Hero가 active `HERO` asset을 우선 사용하도록 구현
-- [x] 공개 Gallery가 active `GALLERY` asset을 sort order 순으로 사용하도록 구현
+- [x] 공개 Gallery가 active `GALLERY` asset을 `sort_order` 순으로 자동 사용하도록 구현
 - [x] BGM이 active `BGM` asset + `music_enabled` 설정을 사용하도록 구현
-- [ ] Production 배포 후 업로드된 Hero가 공개 청첩장에 표시되는지 검증
-- [ ] 실제 Gallery 업로드/정렬 검증
-- [ ] 실제 BGM 업로드/재생 검증
+- [x] Gallery 사진은 Admin Media에서 `GALLERY`로 업로드하면 공개 Gallery 데이터에 자동 포함되는 구조 구현
 - [ ] OG 이미지 메타태그 연결
-- [ ] Gallery reorder / focal point editor
-- [ ] 기존 파일 비활성/삭제 정책
 
-### 확인된 Backlog
+### Media 후순위 개선
 
-- [ ] 모바일 브라우저 강제 Dark Mode 대응
-- [ ] 실제 Kakao Map SDK 적용
-- [ ] RSVP 상세 필터/수정/restore/server-side pagination
-- [ ] Guestbook restore/CSV export/server-side pagination
+실제 웨딩 사진 구성이 확정된 뒤 한 번에 조정한다.
+
+- [ ] Gallery 최종 전체 레이아웃 조정
+- [ ] Gallery 사진별 최종 표시 순서 조정 UI
+- [ ] 사진별 focal point / object-position 편집 UI
+- [ ] Hero/Gallery 실제 화면 비율 및 crop 세부 튜닝
+- [ ] 기존 파일 비활성/삭제/버전 정리 정책
+- [ ] 이미지 width/height metadata 자동 추출 및 관리
+
+## 남은 개발 작업
+
+### 우선순위 1 — 실제 청첩장 콘텐츠 완성
+
+- [ ] 실제 Gallery 웨딩 사진 업로드
+- [ ] 신랑/신부 및 혼주 연락처 입력 후 Contact 기능 활성화
+- [ ] 신랑측/신부측 계좌 정보 입력 후 Account 기능 활성화
+- [ ] 최종 BGM 파일 업로드 및 재생 검증
+- [ ] 문구/교통/주차 등 최종 콘텐츠 검수
+
+### 우선순위 2 — 공유/외부 노출 완성
+
+- [ ] OG 이미지 업로드 및 HTML/Open Graph 메타태그 연결
+- [ ] Kakao Share Production JavaScript Key 및 도메인 설정 최종 확인
+- [ ] Kakao 공유 카드의 제목/설명/이미지 실제 모바일 검증
+- [ ] custom domain 연결
+
+### 우선순위 3 — 위치/지도
+
+- [ ] 현재 placeholder map을 실제 Kakao Map SDK로 교체
+- [ ] 호텔 위치 marker 및 모바일 지도 동작 검증
+- [ ] 카카오맵/네이버지도/TMAP 이동 링크 최종 검수
+
+### 우선순위 4 — 관리자 운영 편의 기능
+
+- [ ] RSVP 상세 필터
+- [ ] RSVP 수정 / restore
+- [ ] RSVP server-side 또는 cursor pagination
+- [ ] Guestbook restore
+- [ ] Guestbook CSV export
+- [ ] Guestbook server-side 또는 cursor pagination
+- [ ] Media Gallery reorder / focal point editor
+- [ ] Media object 삭제/버전 관리
+
+### 우선순위 5 — 배포 안전성과 최종 QA
+
 - [ ] Preview Worker와 Preview D1/R2 완전 분리 검증
-- [~] R2 Media 관리 구현 진행 중
-- [ ] 실제 웨딩 사진/연락처/계좌/BGM 입력
-- [ ] Kakao Share Production 설정 및 OG 이미지
-- [ ] custom domain
-- [ ] 최종 Android/iOS/Kakao 인앱 QA
+- [ ] 모바일 브라우저 강제 Dark Mode 대응
+- [ ] Android Chrome 실제 기기 QA
+- [ ] iPhone Safari 실제 기기 QA
+- [ ] KakaoTalk 인앱 브라우저 QA
+- [ ] RSVP/Guestbook/공유/지도/BGM 전체 회귀 테스트
+- [ ] 이미지 용량/로딩 성능 최종 점검
 
-## 다음 개발
+## 다음 개발 권장 순서
 
-공개 R2 Media 전달 코드를 Production에 배포하고 현재 등록된 Hero 사진 노출을 검증한다. 이후 Gallery 사진 업로드/순서 관리, BGM, OG 이미지 순으로 운영 기능을 확장한다.
+R2 Media의 세부 디자인 편집은 실제 사진이 모두 준비된 뒤 진행한다. 다음 단계는 기능 개발 관점에서 `실제 콘텐츠 입력 → OG/Kakao 공유 → 실제 지도 → custom domain → 모바일 최종 QA` 순서가 효율적이다.
