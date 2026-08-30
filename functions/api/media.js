@@ -9,7 +9,7 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 export async function onRequestGet(context) {
   try {
     const rows = await context.env.WEDDING_DB.prepare(`
-      SELECT id, slot, mime_type, size_bytes, object_position, alt_text, sort_order, created_at
+      SELECT id, slot, mime_type, size_bytes, width, height, object_position, alt_text, sort_order, created_at
         FROM media_assets
        WHERE active = 1
        ORDER BY CASE slot
@@ -28,6 +28,8 @@ export async function onRequestGet(context) {
       slot: row.slot,
       mimeType: row.mime_type,
       sizeBytes: row.size_bytes,
+      width: row.width,
+      height: row.height,
       objectPosition: row.object_position || '',
       altText: row.alt_text || '',
       sortOrder: row.sort_order,
