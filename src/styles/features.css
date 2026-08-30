@@ -23,6 +23,10 @@
 .gallery-grid__item--4 { grid-column: 1; grid-row: 2 / span 2; align-self: end; }
 .gallery-grid__item--5 { grid-column: 1 / -1; margin-top: clamp(10px, 3vw, 16px); }
 .gallery-grid__item--6 { grid-column: 1 / -1; width: 76%; margin: clamp(24px, 7vw, 40px) 0 0 auto; }
+.gallery-grid__item--7 { width: 92%; margin-top: clamp(20px, 6vw, 34px); }
+.gallery-grid__item--8 { width: 92%; margin: clamp(48px, 13vw, 76px) 0 0 auto; }
+.gallery-grid__item--9 { grid-column: 1 / -1; margin-top: clamp(18px, 5vw, 30px); }
+.gallery-grid__item--10 { grid-column: 1 / -1; width: 74%; margin: clamp(26px, 8vw, 46px) auto 0 0; }
 .lightbox {
   position: fixed;
   z-index: 200;
