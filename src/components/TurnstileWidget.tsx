@@ -16,17 +16,41 @@ type TurnstileWidgetProps = {
   resetKey?: number;
 };
 
-type TurnstileState = 'loading' | 'ready' | 'expired' | 'timeout' | 'error' | 'missing-site-key';
+type TurnstileState = 'idle' | 'loading' | 'ready' | 'expired' | 'timeout' | 'error' | 'missing-site-key';
 
 const SCRIPT_ID = 'cf-turnstile-script';
 const SCRIPT_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
 
 export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidgetProps) {
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+  const blockRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const [state, setState] = useState<TurnstileState>(siteKey ? 'loading' : 'missing-site-key');
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [state, setState] = useState<TurnstileState>(siteKey ? 'idle' : 'missing-site-key');
   const [errorCode, setErrorCode] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
+
+  useEffect(() => {
+    if (!siteKey) return;
+    const block = blockRef.current;
+    if (!block || !('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    observer.observe(block);
+    return () => observer.disconnect();
+  }, [siteKey]);
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) {
@@ -34,8 +58,10 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
       onToken('');
       return;
     }
+    if (!shouldLoad) return;
 
     let cancelled = false;
+    setState('loading');
 
     const clearToken = (nextState: TurnstileState) => {
       onToken('');
@@ -74,16 +100,19 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
       }
     };
 
+    const scriptFailed = () => {
+      document.getElementById(SCRIPT_ID)?.remove();
+      setErrorCode('script-load-failed');
+      clearToken('error');
+    };
+
     const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
       if (window.turnstile) {
         render();
       } else {
         existing.addEventListener('load', render, { once: true });
-        existing.addEventListener('error', () => {
-          setErrorCode('script-load-failed');
-          clearToken('error');
-        }, { once: true });
+        existing.addEventListener('error', scriptFailed, { once: true });
       }
     } else {
       const script = document.createElement('script');
@@ -92,10 +121,7 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
       script.async = true;
       script.defer = true;
       script.addEventListener('load', render, { once: true });
-      script.addEventListener('error', () => {
-        setErrorCode('script-load-failed');
-        clearToken('error');
-      }, { once: true });
+      script.addEventListener('error', scriptFailed, { once: true });
       document.head.appendChild(script);
     }
 
@@ -106,7 +132,7 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
         widgetIdRef.current = null;
       }
     };
-  }, [action, onToken, siteKey]);
+  }, [action, onToken, retryKey, shouldLoad, siteKey]);
 
   useEffect(() => {
     if (resetKey > 0 && widgetIdRef.current && window.turnstile) {
@@ -121,14 +147,29 @@ export function TurnstileWidget({ action, onToken, resetKey = 0 }: TurnstileWidg
     return <p className="turnstile-status turnstile-status--error" role="status">보안 모듈 Site Key가 빌드에 포함되지 않았습니다.</p>;
   }
 
+  const retry = () => {
+    setErrorCode('');
+    setState('loading');
+    setShouldLoad(true);
+    onToken('');
+    document.getElementById(SCRIPT_ID)?.remove();
+    setRetryKey((value) => value + 1);
+  };
+
   return (
-    <div className="turnstile-block">
+    <div ref={blockRef} className="turnstile-block">
       <div className="turnstile-wrap" ref={containerRef} />
+      {state === 'idle' && <p className="turnstile-status" role="status">보안 확인 준비 중입니다.</p>}
       {state === 'loading' && <p className="turnstile-status" role="status">보안 모듈을 불러오는 중입니다.</p>}
       {state === 'ready' && <p className="turnstile-status">보안 확인이 완료되었습니다.</p>}
       {state === 'expired' && <p className="turnstile-status">보안 확인이 만료되어 자동으로 갱신 중입니다.</p>}
       {state === 'timeout' && <p className="turnstile-status">보안 확인 시간이 초과되어 다시 확인 중입니다.</p>}
-      {state === 'error' && <p className="turnstile-status turnstile-status--error" role="alert">보안 모듈 오류: {errorCode || 'unknown'}</p>}
+      {state === 'error' && (
+        <div className="turnstile-retry" role="alert">
+          <p className="turnstile-status turnstile-status--error">보안 확인을 완료하지 못했습니다.{errorCode ? ` (${errorCode})` : ''}</p>
+          <button type="button" onClick={retry}>보안 확인 다시 시도</button>
+        </div>
+      )}
     </div>
   );
 }
