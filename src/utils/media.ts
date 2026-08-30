@@ -5,6 +5,8 @@ export type PublicMediaAsset = {
   slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | string;
   mimeType: string;
   sizeBytes: number;
+  width?: number | null;
+  height?: number | null;
   objectPosition: string;
   altText: string;
   sortOrder?: number | null;
@@ -25,11 +27,17 @@ export const emptyMediaState: PublicMediaState = {
   og: null,
 };
 
+function ratioFromAsset(asset: PublicMediaAsset, fallbackRatio: string) {
+  const width = Number(asset.width || 0);
+  const height = Number(asset.height || 0);
+  return width > 0 && height > 0 ? `${width} / ${height}` : fallbackRatio;
+}
+
 function imageFromAsset(asset: PublicMediaAsset, fallbackAlt: string, fallbackRatio: string): WeddingImage {
   return {
     src: asset.url,
     alt: asset.altText || fallbackAlt,
-    ratio: fallbackRatio,
+    ratio: ratioFromAsset(asset, fallbackRatio),
     position: asset.objectPosition || '50% 50%',
   };
 }
@@ -48,7 +56,7 @@ export async function fetchPublicMedia(): Promise<PublicMediaState> {
     const galleryAssets = assets.filter((asset) => asset.slot === 'GALLERY');
 
     return {
-      hero: heroAsset ? imageFromAsset(heroAsset, '승표와 제희의 대표 웨딩 사진', '4 / 5') : null,
+      hero: heroAsset ? imageFromAsset(heroAsset, '승표와 제희의 대표 웨딩 사진', '2 / 3') : null,
       gallery: galleryAssets.map((asset, index) => imageFromAsset(asset, `승표와 제희의 웨딩 사진 ${index + 1}`, '4 / 5')),
       bgm: assets.find((asset) => asset.slot === 'BGM') || null,
       og: assets.find((asset) => asset.slot === 'OG') || null,
