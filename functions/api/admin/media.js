@@ -45,6 +45,56 @@ function validateFile(slot, file) {
   return '';
 }
 
+function readUint24LE(bytes, offset) {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
+}
+
+async function imageDimensions(file) {
+  if (!IMAGE_MIME.has(file.type)) return { width: null, height: null };
+
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+    if (file.type === 'image/png' && bytes.length >= 24 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+      return { width: view.getUint32(16, false), height: view.getUint32(20, false) };
+    }
+
+    if (file.type === 'image/jpeg' && bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+      let offset = 2;
+      const sofMarkers = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+      while (offset + 4 < bytes.length) {
+        if (bytes[offset] !== 0xff) {
+          offset += 1;
+          continue;
+        }
+        while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+        if (offset >= bytes.length) break;
+        const marker = bytes[offset++];
+        if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) continue;
+        if (offset + 2 > bytes.length) break;
+        const length = view.getUint16(offset, false);
+        if (length < 2 || offset + length > bytes.length) break;
+        if (sofMarkers.has(marker) && length >= 7) {
+          return { width: view.getUint16(offset + 5, false), height: view.getUint16(offset + 3, false) };
+        }
+        offset += length;
+      }
+    }
+
+    if (file.type === 'image/webp' && bytes.length >= 30 && String.fromCharCode(...bytes.slice(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8, 12)) === 'WEBP') {
+      const chunk = String.fromCharCode(...bytes.slice(12, 16));
+      if (chunk === 'VP8X' && bytes.length >= 30) {
+        return { width: readUint24LE(bytes, 24) + 1, height: readUint24LE(bytes, 27) + 1 };
+      }
+    }
+  } catch (error) {
+    console.warn('MEDIA_DIMENSION_READ_FAILED', error);
+  }
+
+  return { width: null, height: null };
+}
+
 async function readAssets(db) {
   const rows = await db.prepare(`
     SELECT id, slot, object_key, mime_type, size_bytes, width, height,
@@ -95,6 +145,7 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'INVALID_SORT_ORDER' }, 400);
     }
 
+    const { width, height } = IMAGE_SLOTS.has(slot) ? await imageDimensions(file) : { width: null, height: null };
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const day = now.slice(0, 10).replaceAll('-', '/');
@@ -119,9 +170,9 @@ export async function onRequestPost(context) {
         INSERT INTO media_assets(
           id, slot, object_key, mime_type, size_bytes, width, height,
           object_position, alt_text, sort_order, active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, 1, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
       `).bind(
-        id, slot, objectKey, file.type, file.size,
+        id, slot, objectKey, file.type, file.size, width, height,
         objectPosition || null, altText || null,
         slot === 'GALLERY' ? (sortOrder ?? 0) : null,
         now, now,
@@ -132,7 +183,7 @@ export async function onRequestPost(context) {
         VALUES (?, ?, 'MEDIA_UPLOAD', 'media_asset', ?, ?, ?)
       `).bind(
         crypto.randomUUID(), actorFromRequest(context.request), id,
-        `${slot} ${file.name} (${file.size} bytes)`, now,
+        `${slot} ${file.name} (${file.size} bytes${width && height ? `, ${width}x${height}` : ''})`, now,
       ));
 
       await db.batch(statements);
