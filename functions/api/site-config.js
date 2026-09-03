@@ -12,6 +12,10 @@ const toBool = (value, fallback) => {
 };
 
 const clean = (value, max) => String(value ?? '').trim().slice(0, max);
+const CONTACT_NAMES = {
+  groom: '홍승표',
+  bride: '이제희',
+};
 
 function parseJson(value, fallback) {
   if (!value) return fallback;
@@ -24,12 +28,15 @@ function parseJson(value, fallback) {
 
 function publicContacts(value) {
   const rows = Array.isArray(value) ? value : [];
-  return rows.slice(0, 10).map((item) => ({
-    id: clean(item?.id, 60),
-    label: clean(item?.label, 40),
-    name: clean(item?.name, 40),
-    phone: clean(item?.phone, 40),
-  })).filter((item) => item.id && item.name && item.phone);
+  return rows.slice(0, 10).map((item) => {
+    const id = clean(item?.id, 60);
+    return {
+      id,
+      label: clean(item?.label, 40),
+      name: CONTACT_NAMES[id] || clean(item?.name, 40),
+      phone: clean(item?.phone, 40),
+    };
+  }).filter((item) => item.id && item.name && item.phone);
 }
 
 function publicAccountGroup(value) {
