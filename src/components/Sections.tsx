@@ -3,6 +3,7 @@ import { Calendar } from './Calendar';
 import { CopyIcon, ShareIcon } from './Icons';
 import { SectionLabel } from './SectionLabel';
 import { wedding } from '../data/wedding';
+import type { AccountItem, ContactItem } from '../data/wedding';
 import { downloadWeddingIcs } from '../utils/calendar';
 
 type CommonProps = {
@@ -50,36 +51,47 @@ export function DateSection({ dday }: Pick<CommonProps, 'dday'>) {
   );
 }
 
-export function ContactSection() {
-  const people = wedding.contacts.filter((person) => person.phone.trim());
-  if (!wedding.features.contacts || !people.length) return null;
+export function ContactSection({ enabled, people }: { enabled: boolean; people: ContactItem[] }) {
+  const visiblePeople = people.filter((person) => person.phone.trim());
+  if (!enabled || !visiblePeople.length) return null;
 
   return (
     <section className="section contact-section" data-reveal>
       <SectionLabel index="04" eyebrow="Contact" title="연락하기" />
       <div className="contact-list">
-        {people.map((person) => (
-          <div className="contact-row" key={person.id}>
-            <div><small>{person.label}</small><strong>{person.name}</strong></div>
-            <div className="contact-row__actions">
-              <a href={`tel:${person.phone}`} aria-label={`${person.label} ${person.name}에게 전화`}>전화</a>
-              <a href={`sms:${person.phone}`} aria-label={`${person.label} ${person.name}에게 문자`}>문자</a>
+        {visiblePeople.map((person) => {
+          const phoneLink = person.phone.replace(/[^0-9+]/g, '');
+          return (
+            <div className="contact-row" key={person.id}>
+              <div><small>{person.label}</small><strong>{person.name}</strong></div>
+              <div className="contact-row__actions">
+                <a href={`tel:${phoneLink}`} aria-label={`${person.label} ${person.name}에게 전화`}>전화</a>
+                <a href={`sms:${phoneLink}`} aria-label={`${person.label} ${person.name}에게 문자`}>문자</a>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 }
 
-export function AccountSection({ onCopyText }: Pick<CommonProps, 'onCopyText'>) {
+export function AccountSection({
+  enabled,
+  accounts,
+  onCopyText,
+}: {
+  enabled: boolean;
+  accounts: { groom: AccountItem[]; bride: AccountItem[] };
+  onCopyText: CommonProps['onCopyText'];
+}) {
   const [openSide, setOpenSide] = useState<'groom' | 'bride' | null>(null);
-  const hasAccounts = wedding.accounts.groom.length > 0 || wedding.accounts.bride.length > 0;
-  if (!wedding.features.accounts || !hasAccounts) return null;
+  const hasAccounts = accounts.groom.length > 0 || accounts.bride.length > 0;
+  if (!enabled || !hasAccounts) return null;
 
   const groups = [
-    { key: 'groom' as const, title: '신랑측', items: wedding.accounts.groom },
-    { key: 'bride' as const, title: '신부측', items: wedding.accounts.bride },
+    { key: 'groom' as const, title: '신랑측', items: accounts.groom },
+    { key: 'bride' as const, title: '신부측', items: accounts.bride },
   ].filter((group) => group.items.length > 0);
 
   return (

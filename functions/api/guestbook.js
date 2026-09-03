@@ -37,22 +37,24 @@ async function verifyTurnstile(context, token, action) {
   }
 }
 
+async function readGuestbookSettings(db) {
+  const rows = await db.prepare(`
+    SELECT key, value FROM site_settings
+    WHERE key IN ('guestbook_enabled', 'guestbook_write_enabled')
+  `).all();
+  const settings = Object.fromEntries((rows.results ?? []).map((row) => [row.key, row.value]));
+  return {
+    enabled: settings.guestbook_enabled !== 'false',
+    writeEnabled: settings.guestbook_write_enabled !== 'false',
+  };
+}
+
 export async function onRequestGet(context) {
   try {
-    const enabled = await context.env.WEDDING_DB.prepare("SELECT value FROM site_settings WHERE key='guestbook_enabled'").first();
-    if (enabled?.value === 'false') return json({ ok: true, items: [], enabled: false });
-    const url = new URL(context.request.url);
-    const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 20, 1), 50);
-    const rows = await context.env.WEDDING_DB.prepare(`
-      SELECT id, name, side, message, created_at
-      FROM guestbook
-      WHERE visible = 1 AND status = 'ACTIVE'
-      ORDER BY created_at DESC
-      LIMIT ?
-    `).bind(limit).all();
-    return json({ ok: true, items: rows.results ?? [], enabled: true });
+    const settings = await readGuestbookSettings(context.env.WEDDING_DB);
+    return json({ ok: true, private: true, items: [], ...settings });
   } catch (error) {
-    console.error('GUESTBOOK_LIST_FAILED', error);
+    console.error('PRIVATE_LETTER_STATUS_FAILED', error);
     return json({ ok: false, error: 'INTERNAL_ERROR' }, 500);
   }
 }
@@ -62,20 +64,14 @@ export async function onRequestPost(context) {
     const body = await context.request.json();
     const name = cleanText(body.name, 30);
     const side = cleanText(body.side, 10).toUpperCase() || null;
-    const message = cleanText(body.message, 300);
-    const deletePassword = String(body.deletePassword ?? '');
+    const message = cleanText(body.message, 1000);
 
     if (!name) return json({ ok: false, error: 'NAME_REQUIRED' }, 400);
     if (side && !['GROOM', 'BRIDE'].includes(side)) return json({ ok: false, error: 'INVALID_SIDE' }, 400);
     if (!message) return json({ ok: false, error: 'MESSAGE_REQUIRED' }, 400);
-    if (deletePassword.length < 4 || deletePassword.length > 30) return json({ ok: false, error: 'INVALID_DELETE_PASSWORD' }, 400);
 
-    const settings = await context.env.WEDDING_DB.prepare(`
-      SELECT key, value FROM site_settings
-      WHERE key IN ('guestbook_enabled', 'guestbook_write_enabled')
-    `).all();
-    const settingMap = Object.fromEntries((settings.results ?? []).map((row) => [row.key, row.value]));
-    if (settingMap.guestbook_enabled === 'false' || settingMap.guestbook_write_enabled === 'false') {
+    const settings = await readGuestbookSettings(context.env.WEDDING_DB);
+    if (!settings.enabled || !settings.writeEnabled) {
       return json({ ok: false, error: 'GUESTBOOK_CLOSED' }, 403);
     }
 
@@ -84,15 +80,15 @@ export async function onRequestPost(context) {
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
-    const deleteHash = await sha256(`${id}:${deletePassword}`);
+    const deleteHash = await sha256(`${id}:${crypto.randomUUID()}`);
     await context.env.WEDDING_DB.prepare(`
-      INSERT INTO guestbook(id, name, side, message, delete_hash, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO guestbook(id, name, side, message, delete_hash, visible, created_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?)
     `).bind(id, name, side, message, deleteHash, now).run();
 
-    return json({ ok: true, id }, 201);
+    return json({ ok: true, id, private: true }, 201);
   } catch (error) {
-    console.error('GUESTBOOK_CREATE_FAILED', error);
+    console.error('PRIVATE_LETTER_CREATE_FAILED', error);
     return json({ ok: false, error: 'INTERNAL_ERROR' }, 500);
   }
 }

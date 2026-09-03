@@ -1,0 +1,103 @@
+.admin-content {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-content-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.admin-content-row {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(220px, 1.2fr);
+  gap: 18px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--admin-line, #e3dfd8);
+}
+
+.admin-content-row > span {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-content-row small,
+.admin-account-row label > span {
+  color: #817b73;
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.admin-content-row strong,
+.admin-account-row > strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-content input[type='tel'],
+.admin-content input[type='text'],
+.admin-content input:not([type]) {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d7d2ca;
+  background: #fff;
+  font: inherit;
+}
+
+.admin-account-side {
+  margin-top: 26px;
+}
+
+.admin-account-side h4 {
+  margin: 0 0 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #171717;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-account-row {
+  display: grid;
+  grid-template-columns: 120px repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+  padding: 14px 0;
+  border-bottom: 1px solid #e3dfd8;
+}
+
+.admin-account-row label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-table__letter {
+  min-width: 320px;
+  max-width: 620px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+@media (max-width: 920px) {
+  .admin-account-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-account-row > strong {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-content-row,
+  .admin-account-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-content-row {
+    gap: 10px;
+  }
+  .admin-account-row > strong {
+    grid-column: auto;
+  }
+}

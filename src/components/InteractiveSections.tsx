@@ -1,16 +1,8 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { SectionLabel } from './SectionLabel';
 import { TurnstileWidget } from './TurnstileWidget';
 import { wedding } from '../data/wedding';
 import { defaultSiteConfig, fetchSiteConfig } from '../utils/siteConfig';
-
-type GuestbookItem = {
-  id: string;
-  name: string;
-  side?: 'GROOM' | 'BRIDE' | null;
-  message: string;
-  created_at: string;
-};
 
 function isDeadlinePassed(value: string) {
   if (!value) return false;
@@ -145,7 +137,6 @@ export function RsvpSection() {
 }
 
 export function GuestbookSection() {
-  const [items, setItems] = useState<GuestbookItem[]>([]);
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [config, setConfig] = useState(defaultSiteConfig);
@@ -154,22 +145,9 @@ export function GuestbookSection() {
   const enabled = wedding.features.guestbook;
   const securityPending = config.turnstileEnabled && !turnstileToken;
 
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch('/api/guestbook?limit=20');
-      if (!response.ok) return;
-      const data = await response.json();
-      setItems(Array.isArray(data.items) ? data.items : []);
-    } catch {
-      // The invitation must remain usable even if the guestbook API is unavailable.
-    }
-  }, []);
-
   useEffect(() => {
-    if (!enabled) return;
-    void fetchSiteConfig().then(setConfig);
-    void load();
-  }, [enabled, load]);
+    if (enabled) void fetchSiteConfig().then(setConfig);
+  }, [enabled]);
 
   if (!enabled || !config.guestbookEnabled) return null;
 
@@ -177,7 +155,7 @@ export function GuestbookSection() {
     event.preventDefault();
     if (submitting || !config.guestbookWriteEnabled) return;
     if (securityPending) {
-      setStatus('보안 확인이 완료된 후 등록해 주세요.');
+      setStatus('보안 확인이 완료된 후 전달해 주세요.');
       return;
     }
 
@@ -189,7 +167,6 @@ export function GuestbookSection() {
       name: form.get('name'),
       side: form.get('side'),
       message: form.get('message'),
-      deletePassword: form.get('deletePassword'),
       turnstileToken,
     };
 
@@ -207,14 +184,13 @@ export function GuestbookSection() {
         throw new Error(String(data.error || 'submit failed'));
       }
       formElement.reset();
-      setStatus('축하 메시지를 남겨주셔서 감사합니다.');
-      await load();
+      setStatus('소중한 마음이 두 사람에게 전달되었습니다. 감사합니다.');
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
       setStatus(
         code === 'TURNSTILE_FAILED'
-          ? '보안 확인에 실패했습니다. 잠시 후 다시 확인하고 등록해 주세요.'
-          : '메시지를 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+          ? '보안 확인에 실패했습니다. 잠시 후 다시 확인하고 전달해 주세요.'
+          : '편지를 전달하지 못했습니다. 잠시 후 다시 시도해 주세요.',
       );
     } finally {
       setSubmitting(false);
@@ -222,55 +198,26 @@ export function GuestbookSection() {
     }
   };
 
-  const remove = async (item: GuestbookItem) => {
-    const deletePassword = window.prompt(`${item.name}님의 메시지를 삭제하려면 등록할 때 입력한 삭제 비밀번호를 입력해 주세요.`);
-    if (!deletePassword) return;
-    try {
-      const response = await fetch(`/api/guestbook/${encodeURIComponent(item.id)}/delete`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ deletePassword }),
-      });
-      if (!response.ok) throw new Error('delete failed');
-      setStatus('메시지가 삭제되었습니다.');
-      await load();
-    } catch {
-      setStatus('삭제 비밀번호가 맞지 않거나 삭제할 수 없는 메시지입니다.');
-    }
-  };
-
   return (
-    <section className="section guestbook-section" data-reveal>
-      <SectionLabel index="07" eyebrow="Guestbook" title="축하의 마음" />
-      {items.length ? (
-        <div className="guestbook-list">
-          {items.map((item) => (
-            <article key={item.id}>
-              <div className="guestbook-list__head">
-                <div><strong>{item.name}</strong><small>{item.side === 'GROOM' ? '신랑측' : item.side === 'BRIDE' ? '신부측' : ''}</small></div>
-                <button type="button" onClick={() => remove(item)} aria-label={`${item.name}님의 메시지 삭제`}>삭제</button>
-              </div>
-              <p>{item.message}</p>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p className="guestbook-empty">아직 남겨진 축하 메시지가 없습니다.<br />첫 축하의 마음을 남겨주세요.</p>
-      )}
+    <section className="section guestbook-section private-letter-section" data-reveal>
+      <SectionLabel index="07" eyebrow="Private Letter" title="두 사람에게 전하는 마음" />
+      <div className="private-letter-note">
+        <small>PRIVATE & CONFIDENTIAL</small>
+        <p>남겨주신 편지는 공개되지 않고<br />신랑·신부에게만 조용히 전달됩니다.</p>
+      </div>
       {config.guestbookWriteEnabled ? (
         <form className="form-card" onSubmit={submit}>
           <label><span>이름</span><input name="name" required maxLength={30} autoComplete="name" /></label>
-          <label><span>구분</span><select name="side" defaultValue=""><option value="">선택 안 함</option><option value="GROOM">신랑측</option><option value="BRIDE">신부측</option></select></label>
-          <label><span>축하 메시지</span><textarea name="message" required maxLength={300} rows={4} /></label>
-          <label><span>삭제 비밀번호</span><input name="deletePassword" required minLength={4} maxLength={30} type="password" inputMode="numeric" autoComplete="new-password" /></label>
+          <label><span>구분 <small>선택</small></span><select name="side" defaultValue=""><option value="">선택 안 함</option><option value="GROOM">신랑측</option><option value="BRIDE">신부측</option></select></label>
+          <label><span>두 사람에게 전할 편지</span><textarea name="message" required maxLength={1000} rows={6} placeholder="축하와 응원의 마음을 자유롭게 남겨주세요." /></label>
           <TurnstileWidget action="guestbook" onToken={setTurnstileToken} resetKey={turnstileReset} />
           <button type="submit" className="form-submit" disabled={submitting || securityPending}>
-            {submitting ? '등록 중…' : securityPending ? '보안 확인 중…' : '메시지 남기기'}
+            {submitting ? '전달 중…' : securityPending ? '보안 확인 중…' : '마음 전하기'}
           </button>
           {status && <p className="form-status" role="status">{status}</p>}
         </form>
       ) : (
-        <div className="form-closed"><strong>새로운 방명록 등록이 마감되었습니다.</strong><p>남겨주신 축하 메시지는 계속 볼 수 있습니다.</p></div>
+        <div className="form-closed"><strong>편지 남기기가 마감되었습니다.</strong><p>전해주신 마음은 신랑·신부에게 소중히 전달되어 있습니다.</p></div>
       )}
     </section>
   );

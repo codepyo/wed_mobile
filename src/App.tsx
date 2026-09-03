@@ -14,7 +14,7 @@ import { wedding } from './data/wedding';
 import { canUseNativeShare, copyToClipboard, getInvitationUrl } from './utils/browser';
 import { emptyMediaState, fetchPublicMedia } from './utils/media';
 import { shareToKakao } from './utils/share';
-import { fetchSiteConfig } from './utils/siteConfig';
+import { defaultSiteConfig, fetchSiteConfig } from './utils/siteConfig';
 
 function getDdayLabel() {
   const target = Date.UTC(
@@ -33,14 +33,14 @@ function getDdayLabel() {
 function App() {
   const [toast, setToast] = useState('');
   const [media, setMedia] = useState(emptyMediaState);
-  const [musicEnabled, setMusicEnabled] = useState(false);
+  const [siteConfig, setSiteConfig] = useState(defaultSiteConfig);
   const dday = useMemo(getDdayLabel, []);
   const nativeShareAvailable = canUseNativeShare();
 
   useEffect(() => {
     void Promise.all([fetchPublicMedia(), fetchSiteConfig()]).then(([nextMedia, config]) => {
       setMedia(nextMedia);
-      setMusicEnabled(config.musicEnabled);
+      setSiteConfig(config);
     });
   }, []);
 
@@ -57,7 +57,7 @@ function App() {
     );
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
-  }, [media.gallery.length]);
+  }, [media.gallery.length, siteConfig.contactsEnabled, siteConfig.accountsEnabled]);
 
   useEffect(() => {
     if (!toast) return;
@@ -103,8 +103,8 @@ function App() {
       <DateSection dday={dday} />
       <MediaGallerySection images={media.gallery} />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
-      <ContactSection />
-      <AccountSection onCopyText={copyText} />
+      <ContactSection enabled={siteConfig.contactsEnabled} people={siteConfig.contacts} />
+      <AccountSection enabled={siteConfig.accountsEnabled} accounts={siteConfig.accounts} onCopyText={copyText} />
       <RsvpSection />
       <GuestbookSection />
       <ClosingSection
@@ -113,7 +113,7 @@ function App() {
         onCopyUrl={() => copyText(getInvitationUrl(), '청첩장 주소가 복사되었습니다.')}
         canNativeShare={nativeShareAvailable}
       />
-      <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={musicEnabled && Boolean(media.bgm?.url)} />
+      <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={siteConfig.musicEnabled && Boolean(media.bgm?.url)} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
   );

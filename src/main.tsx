@@ -10,6 +10,7 @@ import './styles/map.css';
 import './styles/quality.css';
 import './styles/admin.css';
 import './styles/admin-media.css';
+import './styles/admin-content.css';
 import './styles/admin-responsive.css';
 
 const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
