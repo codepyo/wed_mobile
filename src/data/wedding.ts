@@ -47,8 +47,8 @@ export const wedding = {
     },
   },
   contacts: [
-    { id: 'groom', label: '신랑', name: '승표', phone: '' },
-    { id: 'bride', label: '신부', name: '제희', phone: '' },
+    { id: 'groom', label: '신랑', name: '홍승표', phone: '' },
+    { id: 'bride', label: '신부', name: '이제희', phone: '' },
     { id: 'groom-father', label: '신랑 아버지', name: '홍상민', phone: '' },
     { id: 'groom-mother', label: '신랑 어머니', name: '정미경', phone: '' },
     { id: 'bride-father', label: '신부 아버지', name: '이현규', phone: '' },

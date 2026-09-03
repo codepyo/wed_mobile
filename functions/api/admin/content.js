@@ -7,8 +7,8 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 });
 
 const CONTACT_DEFS = [
-  { id: 'groom', label: '신랑', name: '승표' },
-  { id: 'bride', label: '신부', name: '제희' },
+  { id: 'groom', label: '신랑', name: '홍승표' },
+  { id: 'bride', label: '신부', name: '이제희' },
   { id: 'groom-father', label: '신랑 아버지', name: '홍상민' },
   { id: 'groom-mother', label: '신랑 어머니', name: '정미경' },
   { id: 'bride-father', label: '신부 아버지', name: '이현규' },
