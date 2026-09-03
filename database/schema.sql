@@ -77,4 +77,8 @@ INSERT OR IGNORE INTO site_settings(key, value, updated_at) VALUES
   ('rsvp_deadline', '', datetime('now')),
   ('guestbook_enabled', 'true', datetime('now')),
   ('guestbook_write_enabled', 'true', datetime('now')),
-  ('music_enabled', 'false', datetime('now'));
+  ('music_enabled', 'false', datetime('now')),
+  ('contacts_enabled', 'false', datetime('now')),
+  ('accounts_enabled', 'false', datetime('now')),
+  ('contacts_json', '[]', datetime('now')),
+  ('accounts_json', '{"groom":[],"bride":[]}', datetime('now'));
