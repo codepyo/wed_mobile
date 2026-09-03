@@ -139,6 +139,7 @@ export function RsvpSection() {
 export function GuestbookSection() {
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
   const [config, setConfig] = useState(defaultSiteConfig);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileReset, setTurnstileReset] = useState(0);
@@ -184,7 +185,7 @@ export function GuestbookSection() {
         throw new Error(String(data.error || 'submit failed'));
       }
       formElement.reset();
-      setStatus('소중한 마음이 승표·제희에게 전달되었습니다. 감사합니다.');
+      setSent(true);
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
       setStatus(
@@ -194,8 +195,16 @@ export function GuestbookSection() {
       );
     } finally {
       setSubmitting(false);
+      setTurnstileToken('');
       setTurnstileReset((value) => value + 1);
     }
+  };
+
+  const writeAnother = () => {
+    setStatus('');
+    setSent(false);
+    setTurnstileToken('');
+    setTurnstileReset((value) => value + 1);
   };
 
   return (
@@ -206,16 +215,31 @@ export function GuestbookSection() {
         <p>남겨주신 편지는 공개되지 않고<br />승표·제희에게만 조용히 전달됩니다.</p>
       </div>
       {config.guestbookWriteEnabled ? (
-        <form className="form-card" onSubmit={submit}>
-          <label><span>이름</span><input name="name" required maxLength={30} autoComplete="name" /></label>
-          <label><span>구분 <small>선택</small></span><select name="side" defaultValue=""><option value="">선택 안 함</option><option value="GROOM">신랑측</option><option value="BRIDE">신부측</option></select></label>
-          <label><span>승표·제희에게 전할 편지</span><textarea name="message" required maxLength={1000} rows={6} placeholder="축하와 응원의 마음을 자유롭게 남겨주세요." /></label>
-          <TurnstileWidget action="guestbook" onToken={setTurnstileToken} resetKey={turnstileReset} />
-          <button type="submit" className="form-submit" disabled={submitting || securityPending}>
-            {submitting ? '전달 중…' : securityPending ? '보안 확인 중…' : '마음 전하기'}
-          </button>
-          {status && <p className="form-status" role="status">{status}</p>}
-        </form>
+        sent ? (
+          <div className="private-letter-sent" role="status" aria-live="polite">
+            <div className="private-letter-envelope" aria-hidden="true">
+              <div className="private-letter-envelope__paper">S <span>·</span> J</div>
+              <div className="private-letter-envelope__body" />
+              <div className="private-letter-envelope__flap" />
+              <div className="private-letter-envelope__seal">S·J</div>
+            </div>
+            <small>DELIVERED PRIVATELY</small>
+            <strong>승표·제희에게 편지를 전했어요.</strong>
+            <p>소중한 마음은 두 사람만 조용히 확인할 수 있습니다.</p>
+            <button type="button" className="private-letter-sent__again" onClick={writeAnother}>한 통 더 남기기</button>
+          </div>
+        ) : (
+          <form className="form-card" onSubmit={submit}>
+            <label><span>이름</span><input name="name" required maxLength={30} autoComplete="name" /></label>
+            <label><span>구분 <small>선택</small></span><select name="side" defaultValue=""><option value="">선택 안 함</option><option value="GROOM">신랑측</option><option value="BRIDE">신부측</option></select></label>
+            <label><span>승표·제희에게 전할 편지</span><textarea name="message" required maxLength={1000} rows={6} placeholder="축하와 응원의 마음을 자유롭게 남겨주세요." /></label>
+            <TurnstileWidget action="guestbook" onToken={setTurnstileToken} resetKey={turnstileReset} />
+            <button type="submit" className="form-submit" disabled={submitting || securityPending}>
+              {submitting ? '전달 중…' : securityPending ? '보안 확인 중…' : '마음 전하기'}
+            </button>
+            {status && <p className="form-status" role="status">{status}</p>}
+          </form>
+        )
       ) : (
         <div className="form-closed"><strong>편지 남기기가 마감되었습니다.</strong><p>전해주신 마음은 승표·제희에게 소중히 전달되어 있습니다.</p></div>
       )}
