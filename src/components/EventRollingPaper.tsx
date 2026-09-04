@@ -124,9 +124,10 @@ export function EventRollingPaper({ sessionId, nickname, side, completed, onComp
   }, [sessionId, onStats]);
 
   useEffect(() => {
-    if (feed.length < 2) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (feed.length < 2 || reducedMotion) return;
     const timer = window.setInterval(() => {
-      if (Date.now() < autoPauseUntilRef.current) return;
+      if (document.visibilityState === 'hidden' || Date.now() < autoPauseUntilRef.current) return;
       const track = feedTrackRef.current;
       if (!track) return;
       const cards = Array.from(track.querySelectorAll<HTMLElement>('.rolling-feed-card'));
@@ -148,8 +149,7 @@ export function EventRollingPaper({ sessionId, nickname, side, completed, onComp
       const next = cards[nextIndex];
       const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth);
       const target = Math.min(maxLeft, Math.max(0, next.offsetLeft - (track.clientWidth - next.offsetWidth) / 2));
-      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      track.scrollTo({ left: target, behavior: reducedMotion ? 'auto' : 'smooth' });
+      track.scrollTo({ left: target, behavior: 'smooth' });
     }, AUTO_SLIDE_MS);
     return () => window.clearInterval(timer);
   }, [feed.length]);
