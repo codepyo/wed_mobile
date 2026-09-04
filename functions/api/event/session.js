@@ -1,6 +1,7 @@
 import {
   cleanText,
   ensureEventSchema,
+  getEventEntryNumber,
   getEventSession,
   getGlobalCheer,
   json,
@@ -8,6 +9,42 @@ import {
   requireEventOpen,
   validSessionId,
 } from '../../_lib/event.js';
+
+function sessionPayload(session, entryNumber, globalCheer, serverTime) {
+  return {
+    ok: true,
+    sessionId: session.id,
+    nickname: session.nickname,
+    side: session.side,
+    personalCheer: Number(session.cheer_count || 0),
+    globalCheer,
+    enteredAt: session.entered_at,
+    entryNumber: Math.max(0, Number(entryNumber || 0)),
+    serverTime,
+  };
+}
+
+export async function onRequestGet(context) {
+  const closed = requireEventOpen();
+  if (closed) return closed;
+
+  try {
+    const db = context.env.WEDDING_DB;
+    await ensureEventSchema(db);
+    const sessionId = validSessionId(new URL(context.request.url).searchParams.get('sessionId'));
+    if (!sessionId) return json({ ok: false, error: 'INVALID_SESSION' }, 400);
+
+    const session = await getEventSession(db, sessionId);
+    if (!session) return json({ ok: false, error: 'SESSION_NOT_FOUND' }, 404);
+
+    const entryNumber = Number(session.entry_number || 0) || await getEventEntryNumber(db, session.id, true);
+    const globalCheer = await getGlobalCheer(db);
+    return json(sessionPayload(session, entryNumber, globalCheer, new Date().toISOString()));
+  } catch (error) {
+    console.error('EVENT_SESSION_GET_FAILED', error);
+    return json({ ok: false, error: 'INTERNAL_ERROR' }, 500);
+  }
+}
 
 export async function onRequestPost(context) {
   const closed = requireEventOpen();
@@ -45,17 +82,9 @@ export async function onRequestPost(context) {
       session = await getEventSession(db, id);
     }
 
+    const entryNumber = Number(session.entry_number || 0) || await getEventEntryNumber(db, session.id, true);
     const globalCheer = await getGlobalCheer(db);
-    return json({
-      ok: true,
-      sessionId: session.id,
-      nickname: session.nickname,
-      side: session.side,
-      personalCheer: Number(session.cheer_count || 0),
-      globalCheer,
-      enteredAt: session.entered_at,
-      serverTime: now,
-    }, 201);
+    return json(sessionPayload(session, entryNumber, globalCheer, now), 201);
   } catch (error) {
     console.error('EVENT_SESSION_FAILED', error);
     return json({ ok: false, error: 'INTERNAL_ERROR' }, 500);
