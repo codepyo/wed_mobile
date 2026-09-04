@@ -42,6 +42,11 @@ export function validSessionId(value) {
   return /^[a-zA-Z0-9-]{16,80}$/.test(id) ? id : '';
 }
 
+export function validBatchId(value) {
+  const id = cleanText(value, 80);
+  return /^[a-zA-Z0-9-]{16,80}$/.test(id) ? id : '';
+}
+
 export async function ensureEventSchema(db) {
   await db.batch([
     db.prepare(`
@@ -65,6 +70,15 @@ export async function ensureEventSchema(db) {
         updated_at TEXT NOT NULL
       )
     `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS event_cheer_batches (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        delta INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_cheer_batches_session ON event_cheer_batches(session_id, created_at DESC)`),
     db.prepare(`
       CREATE TABLE IF NOT EXISTS event_drawings (
         id TEXT PRIMARY KEY,
