@@ -1,4 +1,6 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { isLocalEventPreview, loadLocalEventState } from '../utils/weddingEvent';
+import { fetchEventSessionInfo } from '../utils/weddingEventApi';
 
 type Position = 'top' | 'center' | 'bottom';
 
@@ -33,6 +35,39 @@ function drawPumpkin(context: CanvasRenderingContext2D, x: number, y: number, si
   context.restore();
 }
 
+function ordinal(value: number) {
+  const number = Math.max(1, Math.floor(value));
+  const mod100 = number % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${number}th`;
+  if (number % 10 === 1) return `${number}st`;
+  if (number % 10 === 2) return `${number}nd`;
+  if (number % 10 === 3) return `${number}rd`;
+  return `${number}th`;
+}
+
+function drawGuestRank(context: CanvasRenderingContext2D, rank: string) {
+  const isPreview = rank === 'PREVIEW';
+  context.save();
+  context.textAlign = 'left';
+  context.textBaseline = 'alphabetic';
+  context.fillStyle = '#ef8a35';
+  context.font = isPreview ? '700 48px Georgia, serif' : '700 82px Georgia, serif';
+  const rankWidth = context.measureText(rank).width;
+  context.fillStyle = '#f3ecdf';
+  context.font = '700 27px system-ui, sans-serif';
+  const guestWidth = context.measureText('GUEST').width;
+  const gap = 18;
+  const startX = 540 - (rankWidth + gap + guestWidth) / 2;
+
+  context.fillStyle = '#ef8a35';
+  context.font = isPreview ? '700 48px Georgia, serif' : '700 82px Georgia, serif';
+  context.fillText(rank, startX, 1870);
+  context.fillStyle = '#f3ecdf';
+  context.font = '700 27px system-ui, sans-serif';
+  context.fillText('GUEST', startX + rankWidth + gap, 1860);
+  context.restore();
+}
+
 export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [photoUrl, setPhotoUrl] = useState('');
@@ -41,10 +76,30 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
   const [zoom, setZoom] = useState(1);
   const [status, setStatus] = useState('');
   const [rendering, setRendering] = useState(false);
+  const [entryNumber, setEntryNumber] = useState<number | null>(null);
+
+  const preview = isLocalEventPreview();
+  const localSession = loadLocalEventState();
+  const serverSessionId = localSession?.serverSessionId || '';
+  const guestRank = useMemo(() => preview ? 'PREVIEW' : entryNumber ? ordinal(entryNumber) : '', [preview, entryNumber]);
 
   useEffect(() => () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
   }, [photoUrl]);
+
+  useEffect(() => {
+    if (preview || !serverSessionId) {
+      setEntryNumber(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchEventSessionInfo(serverSessionId).then((payload) => {
+      if (!cancelled) setEntryNumber(Math.max(0, Number(payload.entryNumber || 0)) || null);
+    }).catch(() => {
+      if (!cancelled) setEntryNumber(null);
+    });
+    return () => { cancelled = true; };
+  }, [preview, serverSessionId]);
 
   const choosePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -70,6 +125,17 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
     setRendering(true);
     setStatus('인증 사진을 만들고 있어요…');
     try {
+      let resolvedEntryNumber = entryNumber;
+      if (!preview && !resolvedEntryNumber && serverSessionId) {
+        try {
+          const payload = await fetchEventSessionInfo(serverSessionId);
+          resolvedEntryNumber = Math.max(0, Number(payload.entryNumber || 0)) || null;
+          setEntryNumber(resolvedEntryNumber);
+        } catch {
+          // The pass still renders if the rank lookup is temporarily unavailable.
+        }
+      }
+
       const image = await loadImage(photoUrl);
       const canvas = document.createElement('canvas');
       canvas.width = 1080;
@@ -107,16 +173,24 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
 
       context.fillStyle = '#f3ecdf';
       context.font = '500 28px system-ui, sans-serif';
-      context.fillText('SEUNGPYO  ×  JEHEE', 540, 1590);
+      context.fillText('SEUNGPYO  ×  JEHEE', 540, 1586);
       context.fillStyle = '#ef8a35';
       context.font = '700 68px Georgia, serif';
-      context.fillText('31 OCT 2026', 540, 1680);
+      context.fillText('31 OCT 2026', 540, 1674);
       context.fillStyle = 'rgba(243,236,223,.72)';
       context.font = '500 24px system-ui, sans-serif';
-      context.fillText('RAMADA PLAZA SUWON · 12:00', 540, 1742);
+      context.fillText('RAMADA PLAZA SUWON · 12:00', 540, 1736);
       context.fillStyle = '#f3ecdf';
       context.font = '600 22px system-ui, sans-serif';
-      context.fillText(`${nickname} · WEDDING GUEST`, 540, 1828);
+      context.fillText(`${nickname} · WEDDING GUEST PASS`, 540, 1796);
+
+      const outputRank = preview ? 'PREVIEW' : resolvedEntryNumber ? ordinal(resolvedEntryNumber) : '';
+      if (outputRank) drawGuestRank(context, outputRank);
+      else {
+        context.fillStyle = '#f3ecdf';
+        context.font = '700 34px system-ui, sans-serif';
+        context.fillText('WEDDING GUEST', 540, 1870);
+      }
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
       if (!blob) throw new Error('ENCODE_FAILED');
@@ -150,7 +224,17 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
         ) : (
           <span className="event-photo-slot__empty"><i aria-hidden="true">+</i><strong>DROP YOUR PHOTO IN HERE</strong><small>탭해서 사진 또는 카메라 선택</small></span>
         )}
-        <span className="event-photo-slot__frame" aria-hidden="true"><b>HALLOWEEN WEDDING</b><em>SEUNGPYO × JEHEE</em><small>31 OCT 2026</small></span>
+        <span className="event-photo-slot__frame" aria-hidden="true">
+          <b>HALLOWEEN WEDDING</b>
+          <span className="event-photo-slot__footer">
+            <em>SEUNGPYO × JEHEE</em>
+            <small>31 OCT 2026</small>
+            <span className={`event-photo-slot__guest ${preview ? 'is-preview' : ''}`}>
+              {guestRank ? <strong>{guestRank}</strong> : <strong className="is-loading">—</strong>}
+              <i>GUEST</i>
+            </span>
+          </span>
+        </span>
       </button>
       <div className="event-photo-pass__meta">
         <span>{fileName || '사진은 이 브라우저에서만 처리됩니다.'}</span>
