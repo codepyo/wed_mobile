@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import EventAdminPanel, { type EventAdminData, type EventAdminDrawing } from './EventAdminPanel';
 
 type DashboardData = {
   rsvp?: {
@@ -44,7 +45,7 @@ type SettingsData = {
 
 type MediaAsset = {
   id: string;
-  slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | string;
+  slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | 'EVENT_SECRET' | string;
   object_key: string;
   mime_type: string;
   size_bytes: number;
@@ -88,7 +89,7 @@ type ContentData = {
   };
 };
 
-type View = 'dashboard' | 'rsvp' | 'guestbook' | 'content' | 'media' | 'settings';
+type View = 'dashboard' | 'rsvp' | 'guestbook' | 'content' | 'media' | 'event' | 'settings';
 
 const number = (value?: number) => Number(value ?? 0).toLocaleString('ko-KR');
 const sideLabel = (value?: string | null) => value === 'GROOM' ? '신랑측' : value === 'BRIDE' ? '신부측' : '-';
@@ -123,6 +124,7 @@ export default function AdminApp() {
   const [settings, setSettings] = useState<SettingsData | null>(null);
   const [content, setContent] = useState<ContentData | null>(null);
   const [media, setMedia] = useState<MediaData | null>(null);
+  const [eventData, setEventData] = useState<EventAdminData | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
@@ -153,6 +155,7 @@ export default function AdminApp() {
     const payload = await api<MediaData>('/api/admin/media');
     setMedia({ ...payload, assets: payload.assets || [] });
   };
+  const loadEvent = async () => setEventData(await api<EventAdminData>('/api/admin/event'));
 
   const load = async () => {
     setLoading(true);
@@ -164,6 +167,7 @@ export default function AdminApp() {
       if (view === 'guestbook') await loadLetters();
       if (view === 'content') await loadContent();
       if (view === 'media') await loadMedia();
+      if (view === 'event') await loadEvent();
       if (view === 'settings') await loadSettings();
     } catch {
       setError('관리자 데이터를 불러오지 못했습니다. Cloudflare Access와 D1 연결 상태를 확인해 주세요.');
@@ -179,13 +183,15 @@ export default function AdminApp() {
       : view === 'guestbook' ? '비공개 편지함'
         : view === 'content' ? '연락처 · 계좌 관리'
           : view === 'media' ? '미디어 관리'
-            : '공개 기능 설정';
+            : view === 'event' ? 'Wedding Day EVENT 운영'
+              : '공개 기능 설정';
   const eyebrow = view === 'dashboard' ? 'OVERVIEW'
     : view === 'rsvp' ? 'RSVP'
       : view === 'guestbook' ? 'PRIVATE LETTERS'
         : view === 'content' ? 'CONTENT'
           : view === 'media' ? 'MEDIA'
-            : 'SETTINGS';
+            : view === 'event' ? 'HALLOWEEN EVENT'
+              : 'SETTINGS';
   const attendingPeople = useMemo(() => rsvpItems.reduce((sum, item) => sum + (item.attendance === 'YES' ? Number(item.guest_count || 0) : 0), 0), [rsvpItems]);
 
   const rsvpDelete = async (item: RsvpItem) => {
@@ -211,6 +217,27 @@ export default function AdminApp() {
       await Promise.all([loadLetters(), loadDashboard()]);
     } catch {
       setError('편지를 삭제하지 못했습니다.');
+    }
+  };
+
+  const moderateEventDrawing = async (item: EventAdminDrawing, action: 'DRAWING_HIDE' | 'DRAWING_SHOW' | 'DRAWING_DELETE') => {
+    if (action === 'DRAWING_DELETE' && !window.confirm(`${item.nickname}님의 롤링페이퍼를 삭제할까요?`)) return;
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const payload = await api<EventAdminData>('/api/admin/event', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ id: item.id, action }),
+      });
+      setEventData(payload);
+      setNotice(action === 'DRAWING_HIDE' ? '롤링페이퍼를 공개 화면에서 숨겼습니다.' : action === 'DRAWING_SHOW' ? '롤링페이퍼를 다시 공개했습니다.' : '롤링페이퍼를 삭제 처리했습니다.');
+      await loadDashboard();
+    } catch {
+      setError('EVENT 롤링페이퍼 상태를 변경하지 못했습니다.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -306,6 +333,7 @@ export default function AdminApp() {
       setMedia((current) => current ? { ...current, assets: payload.assets || current.assets } : current);
       setNotice('미디어를 업로드했습니다.');
       await loadDashboard();
+      if (view === 'event') await loadEvent();
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
       setError(code === 'R2_NOT_CONFIGURED' ? 'Cloudflare R2 bucket binding이 아직 연결되지 않았습니다.' : '미디어 업로드에 실패했습니다. 파일 형식과 크기를 확인해 주세요.');
@@ -342,6 +370,7 @@ export default function AdminApp() {
           <button className={view === 'guestbook' ? 'is-active' : ''} onClick={() => setView('guestbook')}>Letters</button>
           <button className={view === 'content' ? 'is-active' : ''} onClick={() => setView('content')}>Content</button>
           <button className={view === 'media' ? 'is-active' : ''} onClick={() => setView('media')}>Media</button>
+          <button className={view === 'event' ? 'is-active' : ''} onClick={() => setView('event')}>Event</button>
           <button className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>Settings</button>
           <span>System</span>
         </aside>
@@ -397,9 +426,11 @@ export default function AdminApp() {
 
           {view === 'media' && media && <>
             <section className="admin-panel"><div className="admin-panel__head"><div><small>R2 STORAGE</small><h3>미디어 저장소</h3></div></div><div className="admin-media-status"><strong>{media.bucketConfigured ? 'R2 연결됨' : 'R2 연결 전'}</strong><span>{media.bucketConfigured ? '새 미디어를 업로드할 수 있습니다.' : 'WEDDING_MEDIA R2 binding을 연결하면 업로드가 활성화됩니다.'}</span></div></section>
-            <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}><div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div><div className="admin-media-fields"><label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="BGM">BGM 음원</option></select></label><label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label><label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label><label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label><label><span>Gallery 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label></div><div className="admin-settings-actions"><button type="submit" disabled={saving || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div></form>
+            <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}><div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div><div className="admin-media-fields"><label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="EVENT_SECRET">EVENT Secret 사진</option><option value="BGM">BGM 음원</option></select></label><label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label><label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label><label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label><label><span>Gallery / Secret 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label></div><div className="admin-settings-actions"><button type="submit" disabled={saving || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div></form>
             <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table admin-table--media"><thead><tr><th>용도</th><th>상태</th><th>파일</th><th>형식</th><th>크기</th><th>순서</th><th>등록일</th></tr></thead><tbody>{media.assets.map((item) => <tr key={item.id}><td><strong>{item.slot}</strong></td><td>{item.active ? '사용 중' : '이전 버전'}</td><td className="admin-table__message">{item.object_key}</td><td>{item.mime_type}</td><td>{bytesLabel(item.size_bytes)}</td><td>{item.sort_order ?? '-'}</td><td>{dateLabel(item.created_at)}</td></tr>)}</tbody></table></div>{!media.assets.length && <p className="admin-empty">등록된 미디어가 없습니다.</p>}</section>
           </>}
+
+          {view === 'event' && eventData && <EventAdminPanel data={eventData} saving={saving} onModerate={(item, action) => void moderateEventDrawing(item, action)} />}
 
           {view === 'settings' && settings && <form className="admin-settings" onSubmit={saveSettings}>
             <section className="admin-panel"><div className="admin-panel__head"><div><small>PUBLIC FEATURES</small><h3>공개 기능 제어</h3></div></div><div className="admin-setting-list"><label className="admin-toggle"><div><strong>RSVP 사용</strong><span>공개 청첩장에서 참석 여부 폼을 활성화합니다.</span></div><input type="checkbox" name="rsvpEnabled" checked={settings.rsvpEnabled} onChange={(event) => setSettings({ ...settings, rsvpEnabled: event.target.checked })} /></label><label className="admin-toggle"><div><strong>비공개 편지함 사용</strong><span>하객이 신랑·신부에게만 보이는 편지를 남길 수 있습니다.</span></div><input type="checkbox" name="guestbookEnabled" checked={settings.guestbookEnabled} onChange={(event) => setSettings({ ...settings, guestbookEnabled: event.target.checked })} /></label><label className="admin-toggle"><div><strong>편지 신규 작성</strong><span>기존 편지는 관리자에서 유지하고 새 편지만 마감할 수 있습니다.</span></div><input type="checkbox" name="guestbookWriteEnabled" checked={settings.guestbookWriteEnabled} disabled={!settings.guestbookEnabled} onChange={(event) => setSettings({ ...settings, guestbookWriteEnabled: event.target.checked })} /></label><label className="admin-toggle"><div><strong>BGM 사용</strong><span>실제 음원이 연결된 이후 공개 BGM 사용 여부를 제어합니다.</span></div><input type="checkbox" name="musicEnabled" checked={settings.musicEnabled} onChange={(event) => setSettings({ ...settings, musicEnabled: event.target.checked })} /></label></div></section>

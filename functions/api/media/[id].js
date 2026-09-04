@@ -37,7 +37,9 @@ export async function onRequestGet(context) {
     const row = await context.env.WEDDING_DB.prepare(`
       SELECT object_key, mime_type
         FROM media_assets
-       WHERE id = ? AND active = 1
+       WHERE id = ?
+         AND active = 1
+         AND slot IN ('HERO', 'GALLERY', 'OG', 'BGM')
        LIMIT 1
     `).bind(id).first();
 

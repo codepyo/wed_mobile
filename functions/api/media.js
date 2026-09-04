@@ -12,6 +12,7 @@ export async function onRequestGet(context) {
       SELECT id, slot, mime_type, size_bytes, width, height, object_position, alt_text, sort_order, created_at
         FROM media_assets
        WHERE active = 1
+         AND slot IN ('HERO', 'GALLERY', 'OG', 'BGM')
        ORDER BY CASE slot
                   WHEN 'HERO' THEN 1
                   WHEN 'GALLERY' THEN 2

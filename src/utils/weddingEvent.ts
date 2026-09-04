@@ -5,13 +5,19 @@ export type WeddingPhase = 'BEFORE' | 'WEDDING_DAY' | 'AFTER';
 export type EventSide = 'GROOM' | 'BRIDE';
 
 export type LocalEventState = {
-  version: 1;
+  version: 2;
   nickname: string;
   side: EventSide;
   cheerCount: number;
+  serverSessionId: string;
+  serverSyncedCheerCount: number;
+  globalCheerCount: number;
+  pendingCheerBatchId: string;
+  pendingCheerBatchDelta: number;
   passportSeen: boolean;
   scratchDone: boolean;
   fortuneIndex: number | null;
+  rollingPaperDone: boolean;
   photoPassDone: boolean;
   secretUnlocked: boolean;
 };
@@ -123,13 +129,19 @@ function isSide(value: unknown): value is EventSide {
 
 export function createLocalEventState(nickname: string, side: EventSide): LocalEventState {
   return {
-    version: 1,
+    version: 2,
     nickname: cleanNickname(nickname),
     side,
     cheerCount: 0,
+    serverSessionId: '',
+    serverSyncedCheerCount: 0,
+    globalCheerCount: 0,
+    pendingCheerBatchId: '',
+    pendingCheerBatchDelta: 0,
     passportSeen: false,
     scratchDone: false,
     fortuneIndex: null,
+    rollingPaperDone: false,
     photoPassDone: false,
     secretUnlocked: false,
   };
@@ -140,17 +152,26 @@ export function loadLocalEventState(): LocalEventState | null {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(EVENT_STORAGE_KEY) || 'null');
     const nickname = cleanNickname(parsed?.nickname);
-    if (!parsed || parsed.version !== 1 || !nickname || !isSide(parsed.side)) return null;
+    if (!parsed || ![1, 2].includes(Number(parsed.version)) || !nickname || !isSide(parsed.side)) return null;
+    const cheerCount = Math.max(0, Math.floor(Number(parsed.cheerCount) || 0));
+    const synced = Math.max(0, Math.floor(Number(parsed.serverSyncedCheerCount) || 0));
+    const pendingDelta = Math.max(0, Math.min(200, Math.floor(Number(parsed.pendingCheerBatchDelta) || 0)));
     return {
-      version: 1,
+      version: 2,
       nickname,
       side: parsed.side,
-      cheerCount: Math.max(0, Math.floor(Number(parsed.cheerCount) || 0)),
+      cheerCount,
+      serverSessionId: String(parsed.serverSessionId || '').slice(0, 80),
+      serverSyncedCheerCount: Math.min(cheerCount, synced),
+      globalCheerCount: Math.max(0, Math.floor(Number(parsed.globalCheerCount) || 0)),
+      pendingCheerBatchId: String(parsed.pendingCheerBatchId || '').slice(0, 80),
+      pendingCheerBatchDelta: pendingDelta,
       passportSeen: Boolean(parsed.passportSeen),
       scratchDone: Boolean(parsed.scratchDone),
       fortuneIndex: Number.isInteger(parsed.fortuneIndex) && parsed.fortuneIndex >= 0 ? parsed.fortuneIndex : null,
+      rollingPaperDone: Boolean(parsed.rollingPaperDone),
       photoPassDone: Boolean(parsed.photoPassDone),
-      secretUnlocked: Boolean(parsed.secretUnlocked),
+      secretUnlocked: Boolean(parsed.secretUnlocked || cheerCount >= 5),
     };
   } catch {
     return null;
