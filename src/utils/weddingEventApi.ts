@@ -50,11 +50,11 @@ export async function syncEventSession(input: { nickname: string; side: EventSid
   });
 }
 
-export async function flushEventCheer(sessionId: string, delta: number) {
-  return requestJson<{ ok: true; personalCheer: number; globalCheer: number; flushed: number }>('/api/event/cheer', {
+export async function flushEventCheer(sessionId: string, batchId: string, delta: number) {
+  return requestJson<{ ok: true; batchId: string; personalCheer: number; globalCheer: number; flushed: number; duplicate?: boolean }>('/api/event/cheer', {
     method: 'POST',
     headers: { 'content-type': 'application/json; charset=utf-8' },
-    body: JSON.stringify({ sessionId, delta }),
+    body: JSON.stringify({ sessionId, batchId, delta }),
   });
 }
 
