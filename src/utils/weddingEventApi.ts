@@ -22,6 +22,7 @@ export type EventSessionPayload = {
   personalCheer: number;
   globalCheer: number;
   enteredAt: string;
+  entryNumber: number;
 };
 
 export type EventSecretAsset = {
@@ -48,6 +49,11 @@ export async function syncEventSession(input: { nickname: string; side: EventSid
     headers: { 'content-type': 'application/json; charset=utf-8' },
     body: JSON.stringify(input),
   });
+}
+
+export async function fetchEventSessionInfo(sessionId: string) {
+  const params = new URLSearchParams({ sessionId });
+  return requestJson<EventSessionPayload & { ok: true }>(`/api/event/session?${params}`);
 }
 
 export async function flushEventCheer(sessionId: string, batchId: string, delta: number) {
