@@ -45,26 +45,30 @@ function ordinal(value: number) {
   return `${number}th`;
 }
 
-function drawGuestRank(context: CanvasRenderingContext2D, rank: string) {
-  const isPreview = rank === 'PREVIEW';
+function drawGuestRank(context: CanvasRenderingContext2D, rank: string, preview = false) {
   context.save();
   context.textAlign = 'left';
   context.textBaseline = 'alphabetic';
-  context.fillStyle = '#ef8a35';
-  context.font = isPreview ? '700 48px Georgia, serif' : '700 82px Georgia, serif';
+  context.font = '700 82px Georgia, serif';
   const rankWidth = context.measureText(rank).width;
-  context.fillStyle = '#f3ecdf';
   context.font = '700 27px system-ui, sans-serif';
   const guestWidth = context.measureText('GUEST').width;
   const gap = 18;
   const startX = 540 - (rankWidth + gap + guestWidth) / 2;
 
   context.fillStyle = '#ef8a35';
-  context.font = isPreview ? '700 48px Georgia, serif' : '700 82px Georgia, serif';
+  context.font = '700 82px Georgia, serif';
   context.fillText(rank, startX, 1870);
   context.fillStyle = '#f3ecdf';
   context.font = '700 27px system-ui, sans-serif';
   context.fillText('GUEST', startX + rankWidth + gap, 1860);
+
+  if (preview) {
+    context.textAlign = 'center';
+    context.fillStyle = 'rgba(243,236,223,.5)';
+    context.font = '700 15px system-ui, sans-serif';
+    context.fillText('PREVIEW SAMPLE', 540, 1903);
+  }
   context.restore();
 }
 
@@ -81,7 +85,7 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
   const preview = isLocalEventPreview();
   const localSession = loadLocalEventState();
   const serverSessionId = localSession?.serverSessionId || '';
-  const guestRank = useMemo(() => preview ? 'PREVIEW' : entryNumber ? ordinal(entryNumber) : '', [preview, entryNumber]);
+  const guestRank = useMemo(() => preview ? '1st' : entryNumber ? ordinal(entryNumber) : '', [preview, entryNumber]);
 
   useEffect(() => () => {
     if (photoUrl) URL.revokeObjectURL(photoUrl);
@@ -184,8 +188,8 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
       context.font = '600 22px system-ui, sans-serif';
       context.fillText(`${nickname} · WEDDING GUEST PASS`, 540, 1796);
 
-      const outputRank = preview ? 'PREVIEW' : resolvedEntryNumber ? ordinal(resolvedEntryNumber) : '';
-      if (outputRank) drawGuestRank(context, outputRank);
+      const outputRank = preview ? '1st' : resolvedEntryNumber ? ordinal(resolvedEntryNumber) : '';
+      if (outputRank) drawGuestRank(context, outputRank, preview);
       else {
         context.fillStyle = '#f3ecdf';
         context.font = '700 34px system-ui, sans-serif';
@@ -231,7 +235,7 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
             <small>31 OCT 2026</small>
             <span className={`event-photo-slot__guest ${preview ? 'is-preview' : ''}`}>
               {guestRank ? <strong>{guestRank}</strong> : <strong className="is-loading">—</strong>}
-              <i>GUEST</i>
+              <i>{preview ? 'GUEST · PREVIEW' : 'GUEST'}</i>
             </span>
           </span>
         </span>
