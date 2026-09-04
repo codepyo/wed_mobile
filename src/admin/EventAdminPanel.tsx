@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { grantAdminEventPreview, revokeAdminEventPreview } from '../utils/weddingEvent';
+
 export type EventAdminSession = {
   id: string;
   nickname: string;
@@ -46,13 +49,43 @@ const sideLabel = (value?: string) => value === 'GROOM' ? '신랑측' : value ==
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleString('ko-KR') : '-';
 
 export default function EventAdminPanel({ data, saving, onModerate }: Props) {
+  const [previewMessage, setPreviewMessage] = useState('');
   const summary = data.summary || {} as EventAdminData['summary'];
   const totalSides = Math.max(1, Number(summary.sessions || 0));
   const groomRatio = Math.min(100, (Number(summary.groomSessions || 0) / totalSides) * 100);
   const brideRatio = Math.min(100, (Number(summary.brideSessions || 0) / totalSides) * 100);
 
+  const openEventPreview = () => {
+    const expiresAt = grantAdminEventPreview();
+    if (!expiresAt) {
+      setPreviewMessage('이 브라우저에서 미리보기 권한을 저장하지 못했습니다. 브라우저 저장소 설정을 확인해 주세요.');
+      return;
+    }
+    setPreviewMessage(`이 브라우저에서 ${new Date(expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}까지 미리보기가 열립니다.`);
+    window.open('/?eventPreview=1', '_blank', 'noopener,noreferrer');
+  };
+
+  const closeEventPreview = () => {
+    revokeAdminEventPreview();
+    setPreviewMessage('이 브라우저의 EVENT 미리보기 권한을 해제했습니다. 이미 열린 미리보기 탭은 새로고침하면 다시 잠깁니다.');
+  };
+
   return (
     <div className="admin-event-view">
+      <section className="admin-panel admin-event-preview-panel">
+        <div className="admin-panel__head">
+          <div><small>PRIVATE QA PREVIEW</small><h3>결혼식 당일 EVENT 미리보기</h3></div>
+          <span className="admin-event-count">1시간 · 이 브라우저만</span>
+        </div>
+        <p>Cloudflare Access를 통과해 이 Admin을 연 브라우저에만 임시 미리보기 권한을 부여합니다. 일반 하객은 같은 링크를 알아도 10월 31일 전에는 들어갈 수 없습니다.</p>
+        <div className="admin-event-preview-actions">
+          <button type="button" onClick={openEventPreview}>EVENT 미리보기 열기 ↗</button>
+          <button type="button" className="admin-event-preview-revoke" onClick={closeEventPreview}>미리보기 권한 해제</button>
+        </div>
+        <small>미리보기에서는 D1 EVENT 입장·CHEER·롤링페이퍼 기록을 남기지 않고 로컬 모드로 동작합니다.</small>
+        {previewMessage && <div className="admin-event-preview-message" role="status">{previewMessage}</div>}
+      </section>
+
       <section className="admin-event-kpis" aria-label="Wedding Event 운영 현황">
         <article><small>EVENT 입장</small><strong>{number(summary.sessions)}</strong><span>sessions</span></article>
         <article><small>전체 CHEER</small><strong>{number(summary.globalCheer)}</strong><span>taps</span></article>

@@ -1,4 +1,79 @@
 .admin-event-view { display: grid; gap: 20px; }
+.admin-event-preview-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(181, 114, 53, .38);
+  background:
+    linear-gradient(135deg, rgba(181, 114, 53, .07), transparent 56%),
+    var(--admin-panel, #fff);
+}
+.admin-event-preview-panel::after {
+  content: '10 · 31';
+  position: absolute;
+  right: 18px;
+  bottom: -12px;
+  color: rgba(181, 114, 53, .07);
+  font-size: clamp(52px, 8vw, 88px);
+  font-weight: 800;
+  letter-spacing: -.08em;
+  pointer-events: none;
+}
+.admin-event-preview-panel > p {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0;
+  color: var(--admin-muted, #666);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.admin-event-preview-panel > small {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 12px;
+  color: var(--admin-muted, #777);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.admin-event-preview-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.admin-event-preview-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #1b1816;
+  background: #1b1816;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-event-preview-actions .admin-event-preview-revoke {
+  border-color: var(--admin-line, #ddd);
+  background: transparent;
+  color: inherit;
+}
+.admin-event-preview-actions button:focus-visible {
+  outline: 2px solid #b57235;
+  outline-offset: 2px;
+}
+.admin-event-preview-message {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-left: 2px solid #b57235;
+  background: rgba(181, 114, 53, .08);
+  font-size: 12px;
+  line-height: 1.6;
+}
 .admin-event-kpis {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -67,6 +142,10 @@
 }
 
 @media (max-width: 560px) {
+  .admin-event-preview-panel .admin-panel__head { align-items: flex-start; gap: 8px; }
+  .admin-event-preview-panel::after { right: 10px; font-size: 58px; }
+  .admin-event-preview-actions { display: grid; grid-template-columns: 1fr; }
+  .admin-event-preview-actions button { width: 100%; }
   .admin-event-kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
   .admin-event-kpis article { padding: 15px; }
   .admin-event-kpis strong { font-size: 28px; }

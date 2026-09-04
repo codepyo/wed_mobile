@@ -24,6 +24,8 @@ export type LocalEventState = {
 
 const EVENT_DAY_KEY = `${wedding.ceremony.year}-${String(wedding.ceremony.month).padStart(2, '0')}-${String(wedding.ceremony.day).padStart(2, '0')}`;
 const EVENT_STORAGE_KEY = 'wedding-event-local-v1';
+const EVENT_PREVIEW_STORAGE_KEY = 'wedding-event-admin-preview-until-v1';
+const EVENT_PREVIEW_DURATION_MS = 60 * 60 * 1000;
 const SEOUL_TIME_ZONE = 'Asia/Seoul';
 const CEREMONY_TIME = Date.parse(wedding.ceremony.isoDate);
 
@@ -65,11 +67,49 @@ export function getDdayLabel(date = new Date()) {
   return `D+${Math.abs(diff)}`;
 }
 
+export function grantAdminEventPreview(durationMs = EVENT_PREVIEW_DURATION_MS) {
+  if (typeof window === 'undefined') return 0;
+  const safeDuration = Math.max(60_000, Math.min(4 * 60 * 60 * 1000, Number(durationMs) || EVENT_PREVIEW_DURATION_MS));
+  const expiresAt = Date.now() + safeDuration;
+  try {
+    window.localStorage.setItem(EVENT_PREVIEW_STORAGE_KEY, String(expiresAt));
+    return expiresAt;
+  } catch {
+    return 0;
+  }
+}
+
+export function revokeAdminEventPreview() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(EVENT_PREVIEW_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures. The normal wedding-day gate remains authoritative.
+  }
+}
+
+export function hasAdminEventPreviewGrant() {
+  if (typeof window === 'undefined') return false;
+  try {
+    const expiresAt = Number(window.localStorage.getItem(EVENT_PREVIEW_STORAGE_KEY) || 0);
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+      if (expiresAt) window.localStorage.removeItem(EVENT_PREVIEW_STORAGE_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isLocalEventPreview() {
   if (typeof window === 'undefined') return false;
+  const requested = new URLSearchParams(window.location.search).get('eventPreview') === '1';
+  if (!requested) return false;
+
   const host = window.location.hostname;
   const local = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
-  return local && new URLSearchParams(window.location.search).get('eventPreview') === '1';
+  return local || hasAdminEventPreviewGrant();
 }
 
 export function useWeddingClock() {
