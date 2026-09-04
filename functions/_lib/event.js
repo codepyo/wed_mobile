@@ -128,29 +128,29 @@ export async function getEventEntryNumber(db, sessionId, create = false) {
   const id = validSessionId(sessionId);
   if (!id) return 0;
 
-  const existing = await db.prepare(`
+  const readAssigned = () => db.prepare(`
     SELECT entry_number
       FROM event_entry_numbers
      WHERE session_id = ?
      LIMIT 1
   `).bind(id).first();
+
+  const existing = await readAssigned();
   if (existing?.entry_number) return Math.max(0, Number(existing.entry_number));
   if (!create) return 0;
 
-  const now = new Date().toISOString();
-  await db.prepare(`
-    INSERT OR IGNORE INTO event_entry_numbers(session_id, entry_number, created_at)
-    SELECT ?, COALESCE(MAX(entry_number), 0) + 1, ?
-      FROM event_entry_numbers
-  `).bind(id, now).run();
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const now = new Date().toISOString();
+    await db.prepare(`
+      INSERT OR IGNORE INTO event_entry_numbers(session_id, entry_number, created_at)
+      SELECT ?, COALESCE(MAX(entry_number), 0) + 1, ?
+        FROM event_entry_numbers
+    `).bind(id, now).run();
+    const assigned = await readAssigned();
+    if (assigned?.entry_number) return Math.max(0, Number(assigned.entry_number));
+  }
 
-  const assigned = await db.prepare(`
-    SELECT entry_number
-      FROM event_entry_numbers
-     WHERE session_id = ?
-     LIMIT 1
-  `).bind(id).first();
-  return Math.max(0, Number(assigned?.entry_number || 0));
+  throw new Error('EVENT_ENTRY_NUMBER_ALLOCATION_FAILED');
 }
 
 export async function getEventSession(db, sessionId) {
