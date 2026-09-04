@@ -19,6 +19,7 @@ export type LocalEventState = {
 const EVENT_DAY_KEY = `${wedding.ceremony.year}-${String(wedding.ceremony.month).padStart(2, '0')}-${String(wedding.ceremony.day).padStart(2, '0')}`;
 const EVENT_STORAGE_KEY = 'wedding-event-local-v1';
 const SEOUL_TIME_ZONE = 'Asia/Seoul';
+const CEREMONY_TIME = Date.parse(wedding.ceremony.isoDate);
 
 const seoulFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: SEOUL_TIME_ZONE,
@@ -69,12 +70,27 @@ export function useWeddingClock() {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
+    let timer = 0;
+    let cancelled = false;
+
+    const schedule = () => {
+      if (cancelled) return;
+      const current = Date.now();
+      const untilCeremony = CEREMONY_TIME - current;
+      const delay = untilCeremony > 0 ? Math.min(30_000, Math.max(100, untilCeremony + 20)) : 30_000;
+      timer = window.setTimeout(() => {
+        setNow(new Date());
+        schedule();
+      }, delay);
+    };
+
     const update = () => setNow(new Date());
-    const timer = window.setInterval(update, 30_000);
+    schedule();
     document.addEventListener('visibilitychange', update);
     window.addEventListener('focus', update);
     return () => {
-      window.clearInterval(timer);
+      cancelled = true;
+      window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', update);
       window.removeEventListener('focus', update);
     };
@@ -82,15 +98,16 @@ export function useWeddingClock() {
 
   return useMemo(() => {
     const phase = getWeddingPhase(now);
-    const ceremonyStarted = now.getTime() >= Date.parse(wedding.ceremony.isoDate);
+    const ceremonyStarted = now.getTime() >= CEREMONY_TIME;
     const preview = isLocalEventPreview();
+    const dday = getDdayLabel(now);
     return {
       now,
       phase,
       preview,
       canEnterEvent: phase === 'WEDDING_DAY' || preview,
-      dday: getDdayLabel(now),
-      momentText: phase === 'WEDDING_DAY' && ceremonyStarted ? "WE'RE GETTING MARRIED" : getDdayLabel(now),
+      dday,
+      momentText: phase === 'WEDDING_DAY' && ceremonyStarted ? "WE'RE GETTING MARRIED" : dday,
       ceremonyStarted,
     };
   }, [now]);
@@ -142,12 +159,11 @@ export function loadLocalEventState(): LocalEventState | null {
 
 export function saveLocalEventState(state: LocalEventState) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(EVENT_STORAGE_KEY, JSON.stringify(state));
-}
-
-export function clearLocalEventState() {
-  if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(EVENT_STORAGE_KEY);
+  try {
+    window.localStorage.setItem(EVENT_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Event interaction still works in-memory when storage is unavailable.
+  }
 }
 
 export function sideLabel(side: EventSide) {
@@ -161,5 +177,5 @@ export function deterministicIndex(seed: string, length: number) {
     hash ^= seed.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return Math.abs(hash >>> 0) % length;
+  return (hash >>> 0) % length;
 }
