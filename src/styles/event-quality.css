@@ -1,0 +1,85 @@
+.event-hero h2,
+.event-pass-panel__top h3,
+.event-cheer__count span,
+.event-secret-note p,
+.event-fortune-result h4 {
+  overflow-wrap: anywhere;
+}
+
+.event-footer > div {
+  flex-wrap: wrap;
+}
+
+.event-entry,
+.event-card,
+.event-pass-panel,
+.event-photo-pass {
+  min-width: 0;
+}
+
+.event-side-choice label span,
+.event-primary-button,
+.event-cheer-button,
+.event-pass-tasks button,
+.event-photo-controls__row button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.event-photo-slot img {
+  backface-visibility: hidden;
+}
+
+.event-pass-panel {
+  overscroll-behavior: contain;
+}
+
+.event-pass-tasks button > strong,
+.event-section-head p,
+.event-inline-status {
+  word-break: keep-all;
+}
+
+@media (max-width: 339px) {
+  .event-header {
+    padding-inline: 13px;
+  }
+  .event-header strong {
+    font-size: 10px;
+  }
+  .event-entry h2,
+  .event-hero h2 {
+    font-size: 29px;
+  }
+  .event-side-choice > div {
+    grid-template-columns: 1fr;
+  }
+  .event-pass-trigger {
+    margin-right: 10px;
+  }
+  .event-pass-panel__top h3 {
+    font-size: 20px;
+  }
+  .event-photo-slot,
+  .event-photo-controls,
+  .event-photo-pass__meta,
+  .event-inline-status {
+    width: min(100%, 258px);
+  }
+  .event-footer > div {
+    gap: 10px 18px;
+  }
+}
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .event-entry {
+    padding-top: 32px;
+    padding-bottom: 48px;
+  }
+  .event-pass-backdrop {
+    place-items: center;
+  }
+  .event-pass-panel {
+    max-height: calc(100svh - 20px);
+  }
+}
