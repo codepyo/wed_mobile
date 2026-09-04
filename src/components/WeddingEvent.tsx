@@ -272,15 +272,18 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
     }).then((payload) => {
       if (cancelled) return;
       updateSession((current) => {
-        const localPending = Math.max(0, current.cheerCount - current.serverSyncedCheerCount);
-        const cheerCount = Math.max(current.cheerCount, payload.personalCheer + localPending);
+        const confirmed = Math.max(current.serverSyncedCheerCount, payload.personalCheer);
+        const locallyUnconfirmed = Math.max(0, current.cheerCount - current.serverSyncedCheerCount);
+        const cheerCount = current.pendingCheerBatchId
+          ? Math.max(current.cheerCount, confirmed)
+          : Math.max(current.cheerCount, confirmed + locallyUnconfirmed);
         return {
           ...current,
           serverSessionId: payload.sessionId,
-          serverSyncedCheerCount: payload.personalCheer,
-          globalCheerCount: payload.globalCheer,
+          serverSyncedCheerCount: confirmed,
+          globalCheerCount: Math.max(current.globalCheerCount, payload.globalCheer),
           cheerCount,
-          secretUnlocked: current.secretUnlocked || cheerCount >= 5,
+          secretUnlocked: current.secretUnlocked || cheerCount >= 5 || confirmed >= 5,
         };
       });
       setServerStatus('online');
@@ -317,7 +320,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
           ...state,
           cheerCount: Math.max(state.cheerCount, payload.personalCheer),
           serverSyncedCheerCount: Math.max(state.serverSyncedCheerCount, payload.personalCheer),
-          globalCheerCount: payload.globalCheer,
+          globalCheerCount: Math.max(state.globalCheerCount, payload.globalCheer),
           pendingCheerBatchId: matches ? '' : state.pendingCheerBatchId,
           pendingCheerBatchDelta: matches ? 0 : state.pendingCheerBatchDelta,
           secretUnlocked: state.secretUnlocked || payload.personalCheer >= 5,
@@ -414,7 +417,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
       ...current,
       cheerCount: Math.max(current.cheerCount, personalCheer),
       serverSyncedCheerCount: Math.max(current.serverSyncedCheerCount, personalCheer),
-      globalCheerCount: Math.max(0, globalCheer),
+      globalCheerCount: Math.max(current.globalCheerCount, globalCheer),
       secretUnlocked: current.secretUnlocked || personalCheer >= 5,
     }));
   }, [serverMode, updateSession]);
