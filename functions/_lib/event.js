@@ -66,13 +66,6 @@ async function initializeEventSchema(db) {
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_entered ON event_sessions(entered_at DESC)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_side ON event_sessions(side, status)`),
     db.prepare(`
-      CREATE TABLE IF NOT EXISTS event_counters (
-        id TEXT PRIMARY KEY,
-        value INTEGER NOT NULL DEFAULT 0,
-        updated_at TEXT NOT NULL
-      )
-    `),
-    db.prepare(`
       CREATE TABLE IF NOT EXISTS event_entry_numbers (
         session_id TEXT PRIMARY KEY,
         entry_number INTEGER NOT NULL UNIQUE,
@@ -115,16 +108,10 @@ async function initializeEventSchema(db) {
   ]);
 
   const now = new Date().toISOString();
-  await db.batch([
-    db.prepare(`
-      INSERT OR IGNORE INTO event_cheer_totals(id, total, updated_at)
-      VALUES ('GLOBAL', 0, ?)
-    `).bind(now),
-    db.prepare(`
-      INSERT OR IGNORE INTO event_counters(id, value, updated_at)
-      VALUES ('ENTRY', 0, ?)
-    `).bind(now),
-  ]);
+  await db.prepare(`
+    INSERT OR IGNORE INTO event_cheer_totals(id, total, updated_at)
+    VALUES ('GLOBAL', 0, ?)
+  `).bind(now).run();
 }
 
 export async function ensureEventSchema(db) {
@@ -151,31 +138,11 @@ export async function getEventEntryNumber(db, sessionId, create = false) {
   if (!create) return 0;
 
   const now = new Date().toISOString();
-  let counter = await db.prepare(`
-    UPDATE event_counters
-       SET value = value + 1, updated_at = ?
-     WHERE id = 'ENTRY'
-    RETURNING value
-  `).bind(now).first();
-
-  if (!counter?.value) {
-    await db.prepare(`
-      INSERT OR IGNORE INTO event_counters(id, value, updated_at)
-      VALUES ('ENTRY', 0, ?)
-    `).bind(now).run();
-    counter = await db.prepare(`
-      UPDATE event_counters
-         SET value = value + 1, updated_at = ?
-       WHERE id = 'ENTRY'
-      RETURNING value
-    `).bind(now).first();
-  }
-
-  const nextNumber = Math.max(1, Number(counter?.value || 1));
   await db.prepare(`
     INSERT OR IGNORE INTO event_entry_numbers(session_id, entry_number, created_at)
-    VALUES (?, ?, ?)
-  `).bind(id, nextNumber, now).run();
+    SELECT ?, COALESCE(MAX(entry_number), 0) + 1, ?
+      FROM event_entry_numbers
+  `).bind(id, now).run();
 
   const assigned = await db.prepare(`
     SELECT entry_number
@@ -183,7 +150,7 @@ export async function getEventEntryNumber(db, sessionId, create = false) {
      WHERE session_id = ?
      LIMIT 1
   `).bind(id).first();
-  return Math.max(0, Number(assigned?.entry_number || nextNumber));
+  return Math.max(0, Number(assigned?.entry_number || 0));
 }
 
 export async function getEventSession(db, sessionId) {
