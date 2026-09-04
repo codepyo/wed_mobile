@@ -12,6 +12,8 @@ export type LocalEventState = {
   serverSessionId: string;
   serverSyncedCheerCount: number;
   globalCheerCount: number;
+  pendingCheerBatchId: string;
+  pendingCheerBatchDelta: number;
   passportSeen: boolean;
   scratchDone: boolean;
   fortuneIndex: number | null;
@@ -134,6 +136,8 @@ export function createLocalEventState(nickname: string, side: EventSide): LocalE
     serverSessionId: '',
     serverSyncedCheerCount: 0,
     globalCheerCount: 0,
+    pendingCheerBatchId: '',
+    pendingCheerBatchDelta: 0,
     passportSeen: false,
     scratchDone: false,
     fortuneIndex: null,
@@ -151,6 +155,7 @@ export function loadLocalEventState(): LocalEventState | null {
     if (!parsed || ![1, 2].includes(Number(parsed.version)) || !nickname || !isSide(parsed.side)) return null;
     const cheerCount = Math.max(0, Math.floor(Number(parsed.cheerCount) || 0));
     const synced = Math.max(0, Math.floor(Number(parsed.serverSyncedCheerCount) || 0));
+    const pendingDelta = Math.max(0, Math.min(200, Math.floor(Number(parsed.pendingCheerBatchDelta) || 0)));
     return {
       version: 2,
       nickname,
@@ -159,6 +164,8 @@ export function loadLocalEventState(): LocalEventState | null {
       serverSessionId: String(parsed.serverSessionId || '').slice(0, 80),
       serverSyncedCheerCount: Math.min(cheerCount, synced),
       globalCheerCount: Math.max(0, Math.floor(Number(parsed.globalCheerCount) || 0)),
+      pendingCheerBatchId: String(parsed.pendingCheerBatchId || '').slice(0, 80),
+      pendingCheerBatchDelta: pendingDelta,
       passportSeen: Boolean(parsed.passportSeen),
       scratchDone: Boolean(parsed.scratchDone),
       fortuneIndex: Number.isInteger(parsed.fortuneIndex) && parsed.fortuneIndex >= 0 ? parsed.fortuneIndex : null,
