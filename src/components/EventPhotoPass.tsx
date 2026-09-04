@@ -9,7 +9,7 @@ type Props = {
 };
 
 const POSITION_PERCENT: Record<Position, number> = { top: 22, center: 50, bottom: 78 };
-const POSITION_FACTOR: Record<Position, number> = { top: 0, center: 0.5, bottom: 1 };
+const POSITION_FACTOR: Record<Position, number> = { top: 0.22, center: 0.5, bottom: 0.78 };
 
 function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -58,7 +58,6 @@ export function EventPhotoPass({ nickname, completed, onComplete }: Props) {
       event.target.value = '';
       return;
     }
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(URL.createObjectURL(file));
     setFileName(file.name);
     setPosition('center');
