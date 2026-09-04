@@ -6,7 +6,8 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   },
 });
 
-const IMAGE_SLOTS = new Set(['HERO', 'GALLERY', 'OG']);
+const IMAGE_SLOTS = new Set(['HERO', 'GALLERY', 'OG', 'EVENT_SECRET']);
+const MULTI_IMAGE_SLOTS = new Set(['GALLERY', 'EVENT_SECRET']);
 const AUDIO_SLOTS = new Set(['BGM']);
 const ALLOWED_SLOTS = new Set([...IMAGE_SLOTS, ...AUDIO_SLOTS]);
 const IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
@@ -158,7 +159,7 @@ export async function onRequestPost(context) {
 
     try {
       const statements = [];
-      if (slot !== 'GALLERY') {
+      if (!MULTI_IMAGE_SLOTS.has(slot)) {
         statements.push(db.prepare(`
           UPDATE media_assets
              SET active = 0, updated_at = ?
@@ -174,7 +175,7 @@ export async function onRequestPost(context) {
       `).bind(
         id, slot, objectKey, file.type, file.size, width, height,
         objectPosition || null, altText || null,
-        slot === 'GALLERY' ? (sortOrder ?? 0) : null,
+        MULTI_IMAGE_SLOTS.has(slot) ? (sortOrder ?? 0) : null,
         now, now,
       ));
 
