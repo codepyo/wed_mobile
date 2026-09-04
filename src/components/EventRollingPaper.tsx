@@ -4,6 +4,8 @@ import type { EventSide } from '../utils/weddingEvent';
 
 const COLORS = ['#f4eee4', '#ef8a35', '#9aab84', '#b8a1c4', '#d96c5f'] as const;
 const WIDTHS = [3, 6, 10] as const;
+const AUTO_SLIDE_MS = 4_800;
+const USER_PAUSE_MS = 8_000;
 
 type Props = {
   sessionId: string;
@@ -75,7 +77,9 @@ function DrawingPreview({ drawing }: { drawing: EventDrawing }) {
 
 export function EventRollingPaper({ sessionId, nickname, side, completed, onComplete, onStats }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const feedTrackRef = useRef<HTMLDivElement | null>(null);
   const drawingRef = useRef(false);
+  const autoPauseUntilRef = useRef(0);
   const [strokes, setStrokes] = useState<EventStroke[]>([]);
   const [color, setColor] = useState<(typeof COLORS)[number]>('#f4eee4');
   const [width, setWidth] = useState<(typeof WIDTHS)[number]>(6);
@@ -118,6 +122,41 @@ export function EventRollingPaper({ sessionId, nickname, side, completed, onComp
       window.clearInterval(timer);
     };
   }, [sessionId, onStats]);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (feed.length < 2 || reducedMotion) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'hidden' || Date.now() < autoPauseUntilRef.current) return;
+      const track = feedTrackRef.current;
+      if (!track) return;
+      const cards = Array.from(track.querySelectorAll<HTMLElement>('.rolling-feed-card'));
+      if (cards.length < 2) return;
+
+      const currentCenter = track.scrollLeft + track.clientWidth / 2;
+      let nearestIndex = 0;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      cards.forEach((card, index) => {
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(cardCenter - currentCenter);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = index;
+        }
+      });
+
+      const nextIndex = (nearestIndex + 1) % cards.length;
+      const next = cards[nextIndex];
+      const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+      const target = Math.min(maxLeft, Math.max(0, next.offsetLeft - (track.clientWidth - next.offsetWidth) / 2));
+      track.scrollTo({ left: target, behavior: 'smooth' });
+    }, AUTO_SLIDE_MS);
+    return () => window.clearInterval(timer);
+  }, [feed.length]);
+
+  const pauseAutoSlide = () => {
+    autoPauseUntilRef.current = Date.now() + USER_PAUSE_MS;
+  };
 
   const normalizedPoint = (event: PointerEvent<HTMLCanvasElement>): [number, number] => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -224,8 +263,17 @@ export function EventRollingPaper({ sessionId, nickname, side, completed, onComp
       </div>
 
       <div className="rolling-feed">
-        <div className="rolling-feed__head"><small>{feedTitle}</small><span>{feed.length ? `${feed.length} CARDS` : 'WAITING FOR FIRST CARD'}</span></div>
-        {feed.length ? <div className="rolling-feed-track">{feed.map((drawing) => <DrawingPreview key={drawing.id} drawing={drawing} />)}</div> : <div className="rolling-feed-empty"><strong>첫 낙서를 기다리고 있어요.</strong><span>당신의 한 장이 이 공간의 시작이 될 수 있어요.</span></div>}
+        <div className="rolling-feed__head"><small>{feedTitle}</small><span>{feed.length ? `${feed.length} CARDS · AUTO` : 'WAITING FOR FIRST CARD'}</span></div>
+        {feed.length ? <div
+          className="rolling-feed-track"
+          ref={feedTrackRef}
+          tabIndex={0}
+          aria-label="하객 롤링페이퍼. 자동으로 넘어가며 좌우로 직접 밀어서 볼 수 있습니다."
+          onPointerDown={pauseAutoSlide}
+          onWheel={pauseAutoSlide}
+          onKeyDown={pauseAutoSlide}
+          onFocus={pauseAutoSlide}
+        >{feed.map((drawing) => <DrawingPreview key={drawing.id} drawing={drawing} />)}</div> : <div className="rolling-feed-empty"><strong>첫 낙서를 기다리고 있어요.</strong><span>당신의 한 장이 이 공간의 시작이 될 수 있어요.</span></div>}
       </div>
     </div>
   );

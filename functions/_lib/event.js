@@ -66,6 +66,14 @@ async function initializeEventSchema(db) {
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_entered ON event_sessions(entered_at DESC)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_side ON event_sessions(side, status)`),
     db.prepare(`
+      CREATE TABLE IF NOT EXISTS event_entry_numbers (
+        session_id TEXT PRIMARY KEY,
+        entry_number INTEGER NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+      )
+    `),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_entry_numbers_number ON event_entry_numbers(entry_number)`),
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS event_cheer_totals (
         id TEXT PRIMARY KEY,
         total INTEGER NOT NULL DEFAULT 0,
@@ -116,13 +124,44 @@ export async function ensureEventSchema(db) {
   return schemaReadyPromise;
 }
 
+export async function getEventEntryNumber(db, sessionId, create = false) {
+  const id = validSessionId(sessionId);
+  if (!id) return 0;
+
+  const readAssigned = () => db.prepare(`
+    SELECT entry_number
+      FROM event_entry_numbers
+     WHERE session_id = ?
+     LIMIT 1
+  `).bind(id).first();
+
+  const existing = await readAssigned();
+  if (existing?.entry_number) return Math.max(0, Number(existing.entry_number));
+  if (!create) return 0;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const now = new Date().toISOString();
+    await db.prepare(`
+      INSERT OR IGNORE INTO event_entry_numbers(session_id, entry_number, created_at)
+      SELECT ?, COALESCE(MAX(entry_number), 0) + 1, ?
+        FROM event_entry_numbers
+    `).bind(id, now).run();
+    const assigned = await readAssigned();
+    if (assigned?.entry_number) return Math.max(0, Number(assigned.entry_number));
+  }
+
+  throw new Error('EVENT_ENTRY_NUMBER_ALLOCATION_FAILED');
+}
+
 export async function getEventSession(db, sessionId) {
   const id = validSessionId(sessionId);
   if (!id) return null;
   return db.prepare(`
-    SELECT id, nickname, side, cheer_count, entered_at, last_activity_at
-      FROM event_sessions
-     WHERE id = ? AND status = 'ACTIVE'
+    SELECT s.id, s.nickname, s.side, s.cheer_count, s.entered_at, s.last_activity_at,
+           COALESCE(e.entry_number, 0) AS entry_number
+      FROM event_sessions s
+      LEFT JOIN event_entry_numbers e ON e.session_id = s.id
+     WHERE s.id = ? AND s.status = 'ACTIVE'
      LIMIT 1
   `).bind(id).first();
 }

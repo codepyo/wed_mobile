@@ -24,10 +24,12 @@ async function readEventAdmin(db) {
     `).first(),
     db.prepare(`SELECT total FROM event_cheer_totals WHERE id = 'GLOBAL' LIMIT 1`).first(),
     db.prepare(`
-      SELECT id, nickname, side, cheer_count, entered_at, last_activity_at
-        FROM event_sessions
-       WHERE status = 'ACTIVE'
-       ORDER BY entered_at DESC
+      SELECT s.id, s.nickname, s.side, s.cheer_count, s.entered_at, s.last_activity_at,
+             COALESCE(e.entry_number, 0) AS entry_number
+        FROM event_sessions s
+        LEFT JOIN event_entry_numbers e ON e.session_id = s.id
+       WHERE s.status = 'ACTIVE'
+       ORDER BY s.entered_at DESC
        LIMIT 200
     `).all(),
     db.prepare(`

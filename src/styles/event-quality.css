@@ -30,6 +30,11 @@
   backface-visibility: hidden;
 }
 
+.event-photo-slot__guest.is-preview strong {
+  font-size: clamp(24px, 8vw, 34px);
+  letter-spacing: -.035em;
+}
+
 .event-pass-panel {
   overscroll-behavior: contain;
 }
