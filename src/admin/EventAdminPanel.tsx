@@ -6,6 +6,7 @@ export type EventAdminSession = {
   nickname: string;
   side: 'GROOM' | 'BRIDE';
   cheer_count: number;
+  entry_number: number;
   entered_at: string;
   last_activity_at: string;
 };
@@ -47,6 +48,16 @@ type Props = {
 const number = (value?: number) => Number(value || 0).toLocaleString('ko-KR');
 const sideLabel = (value?: string) => value === 'GROOM' ? '신랑측' : value === 'BRIDE' ? '신부측' : '-';
 const dateLabel = (value?: string) => value ? new Date(value).toLocaleString('ko-KR') : '-';
+const ordinal = (value?: number) => {
+  const rank = Math.max(0, Math.floor(Number(value || 0)));
+  if (!rank) return '-';
+  const mod100 = rank % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${rank}th`;
+  if (rank % 10 === 1) return `${rank}st`;
+  if (rank % 10 === 2) return `${rank}nd`;
+  if (rank % 10 === 3) return `${rank}rd`;
+  return `${rank}th`;
+};
 
 export default function EventAdminPanel({ data, saving, onModerate }: Props) {
   const [previewMessage, setPreviewMessage] = useState('');
@@ -114,7 +125,7 @@ export default function EventAdminPanel({ data, saving, onModerate }: Props) {
 
       <section className="admin-panel admin-table-panel">
         <div className="admin-panel__head"><div><small>LIVE SESSIONS</small><h3>최근 EVENT 입장</h3></div><span className="admin-event-count">최근 {Math.min(200, data.sessions.length)}건</span></div>
-        <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>닉네임</th><th>구분</th><th>CHEER</th><th>입장</th><th>최근 활동</th></tr></thead><tbody>{data.sessions.map((item) => <tr key={item.id}><td><strong>{item.nickname}</strong></td><td>{sideLabel(item.side)}</td><td>{number(item.cheer_count)}</td><td>{dateLabel(item.entered_at)}</td><td>{dateLabel(item.last_activity_at)}</td></tr>)}</tbody></table></div>
+        <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>순서</th><th>닉네임</th><th>구분</th><th>CHEER</th><th>입장</th><th>최근 활동</th></tr></thead><tbody>{data.sessions.map((item) => <tr key={item.id}><td><strong>{ordinal(item.entry_number)}</strong></td><td><strong>{item.nickname}</strong></td><td>{sideLabel(item.side)}</td><td>{number(item.cheer_count)}</td><td>{dateLabel(item.entered_at)}</td><td>{dateLabel(item.last_activity_at)}</td></tr>)}</tbody></table></div>
         {!data.sessions.length && <p className="admin-empty">아직 EVENT 입장 기록이 없습니다. 테이블은 준비된 상태입니다.</p>}
       </section>
 
