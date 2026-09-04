@@ -194,6 +194,7 @@
 .rolling-feed__head small { color: #ef8a35; font: 700 8px/1.2 var(--sans, system-ui, sans-serif); letter-spacing: .15em; }
 .rolling-feed__head span { color: rgba(244, 238, 228, .34); font: 600 8px/1.2 var(--sans, system-ui, sans-serif); letter-spacing: .08em; }
 .rolling-feed-track {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: min(82%, 290px);
