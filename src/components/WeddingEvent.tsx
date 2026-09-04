@@ -180,12 +180,21 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
   }, [open]);
 
   useEffect(() => {
+    if (!open || !passportOpen) return;
+    const timer = window.setTimeout(() => {
+      passportRef.current?.querySelector<HTMLElement>('button')?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open, passportOpen]);
+
+  useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (passportOpen) {
           setPassportOpen(false);
           updateSession((current) => ({ ...current, passportSeen: true }));
+          window.setTimeout(() => dialogRef.current?.querySelector<HTMLElement>('.event-pass-trigger')?.focus(), 0);
         } else {
           closeEvent();
         }
@@ -227,6 +236,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
   const closePassport = () => {
     setPassportOpen(false);
     updateSession((current) => ({ ...current, passportSeen: true }));
+    window.setTimeout(() => dialogRef.current?.querySelector<HTMLElement>('.event-pass-trigger')?.focus(), 0);
   };
 
   const showCombo = (message: string) => {
@@ -268,7 +278,8 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
   ] : [];
 
   const goToTask = (id: string) => {
-    closePassport();
+    setPassportOpen(false);
+    updateSession((current) => ({ ...current, passportSeen: true }));
     window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' }), 80);
   };
 
