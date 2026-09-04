@@ -6,7 +6,7 @@ import {
 } from '../../_lib/event.js';
 
 async function readEventAdmin(db) {
-  const [summary, cheer, sessions, drawings, secret] = await Promise.all([
+  const [summary, drawingSummary, cheer, sessions, drawings, secret] = await Promise.all([
     db.prepare(`
       SELECT
         COUNT(*) AS sessions,
@@ -15,6 +15,12 @@ async function readEventAdmin(db) {
         COALESCE(SUM(cheer_count), 0) AS session_cheers
       FROM event_sessions
       WHERE status = 'ACTIVE'
+    `).first(),
+    db.prepare(`
+      SELECT
+        SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS drawings,
+        SUM(CASE WHEN status = 'ACTIVE' AND visible = 1 THEN 1 ELSE 0 END) AS visible_drawings
+      FROM event_drawings
     `).first(),
     db.prepare(`SELECT total FROM event_cheer_totals WHERE id = 'GLOBAL' LIMIT 1`).first(),
     db.prepare(`
@@ -38,7 +44,6 @@ async function readEventAdmin(db) {
     `).first(),
   ]);
 
-  const drawingRows = drawings.results || [];
   return {
     ok: true,
     summary: {
@@ -47,12 +52,12 @@ async function readEventAdmin(db) {
       brideSessions: Number(summary?.bride_sessions || 0),
       globalCheer: Number(cheer?.total || 0),
       sessionCheers: Number(summary?.session_cheers || 0),
-      drawings: drawingRows.filter((row) => row.status === 'ACTIVE').length,
-      visibleDrawings: drawingRows.filter((row) => row.status === 'ACTIVE' && Number(row.visible) === 1).length,
+      drawings: Number(drawingSummary?.drawings || 0),
+      visibleDrawings: Number(drawingSummary?.visible_drawings || 0),
       secretAssets: Number(secret?.count || 0),
     },
     sessions: sessions.results || [],
-    drawings: drawingRows,
+    drawings: drawings.results || [],
     generatedAt: new Date().toISOString(),
   };
 }
