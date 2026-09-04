@@ -1,6 +1,6 @@
 # Wedding Mobile 개발 일지
 
-최종 업데이트: 2026-09-03
+최종 업데이트: 2026-09-04
 
 Production: `https://wed-mobile.robin5544.workers.dev`
 
@@ -25,18 +25,22 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ---
 
-## 2026-09-03 — Wedding Day EVENT 확장 계획
+## 2026-09-04 — Wedding Day EVENT 계획 보완
 
-기본 청첩장의 Wedding Editorial 톤은 그대로 유지하고, 참여형/할로윈 기능은 페이지 마지막 별도 EVENT 진입점 뒤로 분리하는 방향으로 확정했다.
+기본 청첩장의 Wedding Editorial 톤은 그대로 유지하고, 참여형/할로윈 기능은 페이지 마지막 별도 EVENT 진입점 뒤로 분리한다.
 
 상세 기준 문서: `docs/WEDDING_DAY_EVENT_PLAN.md`
+
+### 범위 조정
+
+- [x] Wedding Day Weather 기능은 현재 EVENT 개발 계획에서 제외
+- [x] Cheer Top 랭킹 공개 기능 제외
+- [x] 경쟁형 UI보다 개인 참여 / Easter Egg 중심으로 방향 확정
 
 ### 기본 날짜 상태
 
 - [ ] BEFORE / WEDDING DAY / AFTER phase helper
 - [ ] 예식 시작 시각 도달 시 `WE'RE GETTING MARRIED` 문구 전환
-- [ ] Wedding Day Weather API 기능
-- [ ] 날씨 노출 위치는 Date / Location / EVENT 중 실제 UI 확인 후 결정
 
 ### EVENT 진입
 
@@ -45,21 +49,50 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [ ] 당일에만 입장 활성화
 - [ ] SPA full-screen Event View 또는 `/event` route
 - [ ] EVENT 내부만 Halloween Wedding Editorial 테마 적용
-- [ ] nickname 기반 개인화 안내
-- [ ] event session / nickname / 입장 시각 / 활동 집계 저장
+- [ ] 입장 시 `닉네임 또는 이름` 필수 입력
+- [ ] 입장 시 `신랑측 / 신부측` 필수 선택
+- [ ] nickname + side 기반 개인화 안내
+- [ ] event session / nickname / side / 입장 시각 / 활동 집계 저장
 - [ ] 입장 기록은 최소 수집하고 입장 화면에 짧은 운영 로그 저장 안내 제공
 - [ ] IP / fingerprint 등 불필요한 식별정보 별도 저장하지 않음
 
-### 참여 기능
+### Event Passport — 온보딩 / 메뉴
+
+- [ ] EVENT 첫 입장 성공 직후 Passport 오버레이 자동 표시
+- [ ] `오늘 할 일` 체크리스트로 참여 기능 먼저 안내
+- [ ] 오버레이를 닫으면 상단 또는 우측 상단에 `PASS n / total` 버튼 유지
+- [ ] 버튼을 눌러 언제든 Passport 다시 열기
+- [ ] Passport 항목을 누르면 해당 EVENT 콘텐츠로 이동
+- [ ] 완료 상태는 즉시 체크하고 단순 UI 상태는 localStorage 우선 활용
+- [ ] 이벤트 기능이 많아져도 무엇을 해야 할지 먼저 알 수 있는 내비게이션 역할
+
+### 축하 / Secret Photo / Combo
 
 - [ ] 무제한 축하 버튼
 - [ ] global 실시간 축하 count
 - [ ] event session별 개인 tap count
-- [ ] Top 3~5 cheer ranking
 - [ ] 네트워크 호출은 tap별 호출 대신 batch 처리
 - [ ] 5회 축하 시 Secret Photo unlock
+- [ ] 10 / 31 / 100회 Cheer Combo 연출
 - [ ] R2 `EVENT_SECRET` / `SECRET_GALLERY` 별도 관리
 - [ ] Secret Photo는 기본 public manifest에 미노출
+- [ ] 공개 Cheer 랭킹은 만들지 않음
+
+### Scratch Card
+
+- [ ] Canvas 기반 `SCRATCH TO REVEAL`
+- [ ] 손가락으로 긁어서 비밀 카드 / 사진 / TMI 공개
+- [ ] 일정 비율 이상 긁으면 전체 자동 reveal
+- [ ] 1차는 서버 저장 없이 local-only
+- [ ] Passport 완료 상태와 연동
+
+### Wedding Fortune / 덕담
+
+- [ ] 점술보다 참석자에게 건네는 `오늘의 축복` 카드로 구현
+- [ ] nickname + side + session seed 기반으로 같은 세션에서 같은 결과 유지
+- [ ] 건강 / 사랑 / 우정 / 좋은 인연 / 웃음 / 추억 중심의 따뜻한 문구
+- [ ] 외부 AI/API 호출 없이 사전 작성 문구 조합
+- [ ] Passport 완료 상태와 연동
 
 ### 낙서 롤링페이퍼
 
@@ -83,6 +116,7 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 - 하객 원본 사진 업로드 기능은 현재 계획에서 제외
 - Instagram 인증 프레임은 local-only 처리
+- Scratch / Fortune / Passport UI 대부분은 브라우저에서 처리
 - 낙서는 PNG 대신 D1 stroke JSON
 - R2 추가 사용은 Secret Photo 등 운영자가 올리는 정적 미디어 중심
 
@@ -252,10 +286,12 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 ## 3. Wedding Day 기능
 
 - [ ] Countdown `WE'RE GETTING MARRIED`
-- [ ] Wedding Day Weather
 - [ ] Pumpkin EVENT entrance / date gate
-- [ ] Halloween Event shell + nickname session
-- [ ] Cheer / ranking / Secret Photo
+- [ ] Halloween Event shell + nickname / side session
+- [ ] Event Passport onboarding / reopen overlay
+- [ ] Cheer / Combo / Secret Photo
+- [ ] Scratch Card
+- [ ] Wedding Fortune / 덕담 카드
 - [ ] Rolling Paper Canvas
 - [ ] local-only Halloween Instagram Frame
 
@@ -286,4 +322,4 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ## 권장 진행 순서
 
-`실제 연락처·계좌/사진 입력 → 기본 청첩장 최종 QA → Countdown/Weather → Pumpkin EVENT shell → Cheer/Secret Photo → Rolling Paper/Instagram Frame → custom domain → 당일 실기기 QA`
+`실제 연락처·계좌/사진 입력 → 기본 청첩장 최종 QA → Countdown → Pumpkin EVENT shell + 닉네임/side → Event Passport → Cheer/Combo/Secret Photo → Scratch/Fortune → Rolling Paper/Instagram Frame → custom domain → 당일 실기기 QA`
