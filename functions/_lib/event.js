@@ -3,6 +3,8 @@ export const EVENT_SIDE = new Set(['GROOM', 'BRIDE']);
 export const DRAWING_COLORS = new Set(['#f4eee4', '#ef8a35', '#9aab84', '#b8a1c4', '#d96c5f']);
 export const DRAWING_WIDTHS = new Set([3, 6, 10]);
 
+let schemaReadyPromise = null;
+
 export const json = (data, status = 200, extraHeaders = {}) => new Response(JSON.stringify(data), {
   status,
   headers: {
@@ -47,7 +49,7 @@ export function validBatchId(value) {
   return /^[a-zA-Z0-9-]{16,80}$/.test(id) ? id : '';
 }
 
-export async function ensureEventSchema(db) {
+async function initializeEventSchema(db) {
   await db.batch([
     db.prepare(`
       CREATE TABLE IF NOT EXISTS event_sessions (
@@ -102,6 +104,16 @@ export async function ensureEventSchema(db) {
     INSERT OR IGNORE INTO event_cheer_totals(id, total, updated_at)
     VALUES ('GLOBAL', 0, ?)
   `).bind(now).run();
+}
+
+export async function ensureEventSchema(db) {
+  if (!schemaReadyPromise) {
+    schemaReadyPromise = initializeEventSchema(db).catch((error) => {
+      schemaReadyPromise = null;
+      throw error;
+    });
+  }
+  return schemaReadyPromise;
 }
 
 export async function getEventSession(db, sessionId) {
