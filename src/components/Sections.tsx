@@ -13,6 +13,7 @@ type CommonProps = {
   onKakaoShare: () => void;
   canNativeShare: boolean;
   dday: string;
+  momentText: string;
 };
 
 export function InvitationSection() {
@@ -38,10 +39,11 @@ export function InvitationSection() {
   );
 }
 
-export function DateSection({ dday }: Pick<CommonProps, 'dday'>) {
+export function DateSection({ dday, momentText }: Pick<CommonProps, 'dday' | 'momentText'>) {
+  const momentActive = momentText !== dday;
   return (
     <section className="date-section" data-reveal>
-      <div className="date-section__topline"><span>THE WEDDING DAY</span><span>{dday}</span></div>
+      <div className="date-section__topline"><span>THE WEDDING DAY</span><span className={momentActive ? 'is-wedding-moment' : ''} aria-live="polite">{momentText}</span></div>
       <div className="date-section__headline" aria-label="2026년 10월 31일"><span>OCT</span><strong>31</strong><span>2026</span></div>
       <p className="date-section__ceremony">{wedding.ceremony.year}년 {wedding.ceremony.month}월 {wedding.ceremony.day}일 {wedding.ceremony.weekday} · {wedding.ceremony.time}</p>
       <Calendar year={wedding.ceremony.year} month={wedding.ceremony.month} selectedDay={wedding.ceremony.day} />
