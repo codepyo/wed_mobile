@@ -66,6 +66,21 @@ async function initializeEventSchema(db) {
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_entered ON event_sessions(entered_at DESC)`),
     db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_sessions_side ON event_sessions(side, status)`),
     db.prepare(`
+      CREATE TABLE IF NOT EXISTS event_counters (
+        id TEXT PRIMARY KEY,
+        value INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL
+      )
+    `),
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS event_entry_numbers (
+        session_id TEXT PRIMARY KEY,
+        entry_number INTEGER NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+      )
+    `),
+    db.prepare(`CREATE INDEX IF NOT EXISTS idx_event_entry_numbers_number ON event_entry_numbers(entry_number)`),
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS event_cheer_totals (
         id TEXT PRIMARY KEY,
         total INTEGER NOT NULL DEFAULT 0,
@@ -100,10 +115,16 @@ async function initializeEventSchema(db) {
   ]);
 
   const now = new Date().toISOString();
-  await db.prepare(`
-    INSERT OR IGNORE INTO event_cheer_totals(id, total, updated_at)
-    VALUES ('GLOBAL', 0, ?)
-  `).bind(now).run();
+  await db.batch([
+    db.prepare(`
+      INSERT OR IGNORE INTO event_cheer_totals(id, total, updated_at)
+      VALUES ('GLOBAL', 0, ?)
+    `).bind(now),
+    db.prepare(`
+      INSERT OR IGNORE INTO event_counters(id, value, updated_at)
+      VALUES ('ENTRY', 0, ?)
+    `).bind(now),
+  ]);
 }
 
 export async function ensureEventSchema(db) {
@@ -116,13 +137,64 @@ export async function ensureEventSchema(db) {
   return schemaReadyPromise;
 }
 
+export async function getEventEntryNumber(db, sessionId, create = false) {
+  const id = validSessionId(sessionId);
+  if (!id) return 0;
+
+  const existing = await db.prepare(`
+    SELECT entry_number
+      FROM event_entry_numbers
+     WHERE session_id = ?
+     LIMIT 1
+  `).bind(id).first();
+  if (existing?.entry_number) return Math.max(0, Number(existing.entry_number));
+  if (!create) return 0;
+
+  const now = new Date().toISOString();
+  let counter = await db.prepare(`
+    UPDATE event_counters
+       SET value = value + 1, updated_at = ?
+     WHERE id = 'ENTRY'
+    RETURNING value
+  `).bind(now).first();
+
+  if (!counter?.value) {
+    await db.prepare(`
+      INSERT OR IGNORE INTO event_counters(id, value, updated_at)
+      VALUES ('ENTRY', 0, ?)
+    `).bind(now).run();
+    counter = await db.prepare(`
+      UPDATE event_counters
+         SET value = value + 1, updated_at = ?
+       WHERE id = 'ENTRY'
+      RETURNING value
+    `).bind(now).first();
+  }
+
+  const nextNumber = Math.max(1, Number(counter?.value || 1));
+  await db.prepare(`
+    INSERT OR IGNORE INTO event_entry_numbers(session_id, entry_number, created_at)
+    VALUES (?, ?, ?)
+  `).bind(id, nextNumber, now).run();
+
+  const assigned = await db.prepare(`
+    SELECT entry_number
+      FROM event_entry_numbers
+     WHERE session_id = ?
+     LIMIT 1
+  `).bind(id).first();
+  return Math.max(0, Number(assigned?.entry_number || nextNumber));
+}
+
 export async function getEventSession(db, sessionId) {
   const id = validSessionId(sessionId);
   if (!id) return null;
   return db.prepare(`
-    SELECT id, nickname, side, cheer_count, entered_at, last_activity_at
-      FROM event_sessions
-     WHERE id = ? AND status = 'ACTIVE'
+    SELECT s.id, s.nickname, s.side, s.cheer_count, s.entered_at, s.last_activity_at,
+           COALESCE(e.entry_number, 0) AS entry_number
+      FROM event_sessions s
+      LEFT JOIN event_entry_numbers e ON e.session_id = s.id
+     WHERE s.id = ? AND s.status = 'ACTIVE'
      LIMIT 1
   `).bind(id).first();
 }
