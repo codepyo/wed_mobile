@@ -41,7 +41,7 @@ const FORTUNES = [
   },
   {
     headline: '따뜻한 마음을 받는 날',
-    body: '오늘 건넨 축하와 다정함이 주변 사람에게도 전해질 거예요. 민수한 마음 하나가 또 다른 따뜻함을 만드는 하루가 되기를 바랍니다.',
+    body: '오늘 건넨 축하와 다정함이 주변 사람에게도 전해질 거예요. 다정한 마음 하나가 또 다른 따뜻함을 만드는 하루가 되기를 바랍니다.',
     lucky: '고맙다는 짧은 한마디',
   },
 ];
@@ -167,7 +167,10 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.setTimeout(() => {
-      const target = dialogRef.current?.querySelector<HTMLElement>('input, button, [href], [tabindex]:not([tabindex="-1"])');
+      const root = dialogRef.current;
+      const target = root?.querySelector<HTMLElement>('.event-entry input')
+        || root?.querySelector<HTMLElement>('.event-pass-trigger')
+        || root?.querySelector<HTMLElement>('.event-close');
       target?.focus();
     }, 0);
     return () => {
@@ -240,7 +243,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
     saveLocalEventState(next);
     setSession(next);
     setCheerPulse((value) => value + 1);
-    if (!reducedMotion && navigator.vibrate) navigator.vibrate(nextCount === 31 || nextCount === 100 ? 30 : 8);
+    if (!reducedMotion && typeof navigator.vibrate === 'function') navigator.vibrate(nextCount === 31 || nextCount === 100 ? 30 : 8);
     if (nextCount === 5) showCombo('SECRET UNLOCKED');
     else if (nextCount === 10) showCombo('10 CHEER COMBO');
     else if (nextCount === 31) showCombo('31 OCT COMBO');
@@ -307,7 +310,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
               </button>
               <div className="event-combo-guide"><span className={session.cheerCount >= 5 ? 'is-done' : ''}>5 · SECRET</span><span className={session.cheerCount >= 10 ? 'is-done' : ''}>10 · COMBO</span><span className={session.cheerCount >= 31 ? 'is-done' : ''}>31 · OCT</span><span className={session.cheerCount >= 100 ? 'is-done' : ''}>100 · MAX</span></div>
               {comboMessage && <div className="event-combo-pop" role="status">{comboMessage}</div>}
-              {session.secretUnlocked && <div className="event-secret-note"><small>SECRET MESSAGE · UNLOCKED</small><p>{secretMessage}</p><span>실제 Secret Photo는 사진이 준비되면 이 위치에 연결할 수 있게 확장 구조만 유지합니다.</span></div>}
+              {session.secretUnlocked && <div className="event-secret-note"><small>SECRET MESSAGE · UNLOCKED</small><p>{secretMessage}</p><span>5 CHEERS COMPLETE · SECRET #01</span></div>}
             </section>
 
             <section className="event-card" id="event-scratch">
@@ -352,7 +355,7 @@ export function WeddingEvent({ phase, canEnter, preview = false }: Props) {
         )}
       </div>
 
-      {session && passportOpen && <div className="event-pass-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePassport(); }}>
+      {session && passportOpen && <div className="event-pass-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) closePassport(); }}>
         <div className="event-pass-panel" ref={passportRef} role="dialog" aria-modal="true" aria-labelledby="event-pass-title">
           <div className="event-pass-panel__top"><div><small>WEDDING EVENT PASS</small><h3 id="event-pass-title">{session.nickname}님의 오늘 할 일</h3></div><button type="button" onClick={closePassport} aria-label="Event Pass 닫기">×</button></div>
           <p className="event-pass-panel__intro">처음이라면 여기부터 보세요. 하고 싶은 것만 골라도 충분합니다.</p>
