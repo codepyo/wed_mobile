@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   AccountSection,
   ClosingSection,
@@ -10,31 +10,19 @@ import { MediaGallerySection, MediaHeroSection } from './components/MediaSection
 import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
 import { LocationSection } from './components/LocationSection';
 import { MusicControl } from './components/MusicControl';
+import { WeddingEvent } from './components/WeddingEvent';
 import { wedding } from './data/wedding';
 import { canUseNativeShare, copyToClipboard, getInvitationUrl } from './utils/browser';
 import { emptyMediaState, fetchPublicMedia } from './utils/media';
 import { shareToKakao } from './utils/share';
 import { defaultSiteConfig, fetchSiteConfig } from './utils/siteConfig';
-
-function getDdayLabel() {
-  const target = Date.UTC(
-    wedding.ceremony.year,
-    wedding.ceremony.month - 1,
-    wedding.ceremony.day,
-  );
-  const today = new Date();
-  const current = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const diff = Math.round((target - current) / 86_400_000);
-  if (diff > 0) return `D-${diff}`;
-  if (diff === 0) return 'D-DAY';
-  return `D+${Math.abs(diff)}`;
-}
+import { useWeddingClock } from './utils/weddingEvent';
 
 function App() {
   const [toast, setToast] = useState('');
   const [media, setMedia] = useState(emptyMediaState);
   const [siteConfig, setSiteConfig] = useState(defaultSiteConfig);
-  const dday = useMemo(getDdayLabel, []);
+  const weddingClock = useWeddingClock();
   const nativeShareAvailable = canUseNativeShare();
 
   useEffect(() => {
@@ -100,7 +88,7 @@ function App() {
     <main className="invitation-shell">
       <MediaHeroSection image={media.hero} />
       <InvitationSection />
-      <DateSection dday={dday} />
+      <DateSection dday={weddingClock.dday} momentText={weddingClock.momentText} />
       <MediaGallerySection images={media.gallery} />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
       <ContactSection enabled={siteConfig.contactsEnabled} people={siteConfig.contacts} />
@@ -113,6 +101,7 @@ function App() {
         onCopyUrl={() => copyText(getInvitationUrl(), '청첩장 주소가 복사되었습니다.')}
         canNativeShare={nativeShareAvailable}
       />
+      <WeddingEvent phase={weddingClock.phase} canEnter={weddingClock.canEnterEvent} preview={weddingClock.preview} />
       <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={siteConfig.musicEnabled && Boolean(media.bgm?.url)} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>

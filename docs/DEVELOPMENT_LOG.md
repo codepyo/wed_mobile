@@ -19,17 +19,20 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - 실제 사진 가로/세로 비율 자동 보존
 - Open Graph / KakaoTalk 공유 기능
 - Kakao Map Web SDK 실제 지도 동작 확인
-- 예식 당일 Halloween Wedding EVENT 확장 로드맵 수립
+- Wedding Day EVENT의 브라우저-only 1차 기능 구현 완료
 
-현재는 **실제 연락처·계좌 입력, 최종 사진 업로드, BGM, custom domain, 실기기 QA**와 함께 당일 참여형 EVENT를 단계적으로 준비하는 단계다.
+현재는 **실제 연락처·계좌 입력, 최종 사진/BGM 업로드, EVENT 서버 연동 기능, custom domain, 실기기 QA**를 마무리하는 단계다.
 
 ---
 
-## 2026-09-04 — Wedding Day EVENT 계획 보완
+## 2026-09-04 — Wedding Day EVENT 브라우저 기능 구현 완료
 
-기본 청첩장의 Wedding Editorial 톤은 그대로 유지하고, 참여형/할로윈 기능은 페이지 마지막 별도 EVENT 진입점 뒤로 분리한다.
+기본 청첩장의 Wedding Editorial 톤은 그대로 유지하고, 참여형/할로윈 기능은 페이지 마지막 별도 EVENT 진입점 뒤로 분리했다.
 
-상세 기준 문서: `docs/WEDDING_DAY_EVENT_PLAN.md`
+상세 기준 문서:
+
+- `docs/WEDDING_DAY_EVENT_PLAN.md`
+- `docs/WEDDING_DAY_EVENT_IMPLEMENTATION.md`
 
 ### 범위 조정
 
@@ -39,85 +42,113 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ### 기본 날짜 상태
 
-- [ ] BEFORE / WEDDING DAY / AFTER phase helper
-- [ ] 예식 시작 시각 도달 시 `WE'RE GETTING MARRIED` 문구 전환
+- [x] `Asia/Seoul` 기준 BEFORE / WEDDING_DAY / AFTER phase helper
+- [x] 예식 시작 시각 도달 시 `WE'RE GETTING MARRIED` 문구 자동 전환
+- [x] 날짜 변화 / 앱 복귀를 반영하도록 wedding clock 갱신
 
 ### EVENT 진입
 
-- [ ] 페이지 마지막 반응형 Pumpkin EVENT 버튼
-- [ ] 당일 전에는 `10.31 당일에만 입장 가능` 잠금 상태
-- [ ] 당일에만 입장 활성화
-- [ ] SPA full-screen Event View 또는 `/event` route
-- [ ] EVENT 내부만 Halloween Wedding Editorial 테마 적용
-- [ ] 입장 시 `닉네임 또는 이름` 필수 입력
-- [ ] 입장 시 `신랑측 / 신부측` 필수 선택
-- [ ] nickname + side 기반 개인화 안내
-- [ ] event session / nickname / side / 입장 시각 / 활동 집계 저장
-- [ ] 입장 기록은 최소 수집하고 입장 화면에 짧은 운영 로그 저장 안내 제공
-- [ ] IP / fingerprint 등 불필요한 식별정보 별도 저장하지 않음
+- [x] 페이지 마지막 반응형 Pumpkin EVENT 버튼
+- [x] 당일 전에는 `10.31 ONLY` 잠금 상태
+- [x] 결혼식 당일에만 EVENT 입장 활성화
+- [x] SPA full-screen Portal로 기본 청첩장 레이아웃과 EVENT 격리
+- [x] EVENT 내부만 Halloween Wedding Editorial 테마 적용
+- [x] 입장 시 `닉네임 또는 이름` 필수 입력
+- [x] 입장 시 `신랑측 / 신부측` 필수 선택
+- [x] nickname + side 기반 개인화 안내
+- [x] nickname / side / 진행도 localStorage 저장
+- [x] localStorage 사용 불가 환경에서도 현재 세션 메모리 상태로 동작 지속
+- [x] Production에 사전 우회 URL을 만들지 않고 localhost `?eventPreview=1`만 QA용으로 허용
+- [ ] event session / nickname / side / 입장 시각 / 활동 집계 D1 저장
 
 ### Event Passport — 온보딩 / 메뉴
 
-- [ ] EVENT 첫 입장 성공 직후 Passport 오버레이 자동 표시
-- [ ] `오늘 할 일` 체크리스트로 참여 기능 먼저 안내
-- [ ] 오버레이를 닫으면 상단 또는 우측 상단에 `PASS n / total` 버튼 유지
-- [ ] 버튼을 눌러 언제든 Passport 다시 열기
-- [ ] Passport 항목을 누르면 해당 EVENT 콘텐츠로 이동
-- [ ] 완료 상태는 즉시 체크하고 단순 UI 상태는 localStorage 우선 활용
-- [ ] 이벤트 기능이 많아져도 무엇을 해야 할지 먼저 알 수 있는 내비게이션 역할
+- [x] EVENT 첫 입장 성공 직후 Passport 오버레이 자동 표시
+- [x] `오늘 할 일` 체크리스트로 참여 기능 먼저 안내
+- [x] 오버레이를 닫으면 상단 `PASS n / 4` 버튼 유지
+- [x] 버튼을 눌러 언제든 Passport 다시 열기
+- [x] Passport 항목을 누르면 해당 EVENT 콘텐츠로 이동
+- [x] 완료 상태 즉시 체크 및 localStorage 유지
+- [x] Passport 오픈 시 focus 이동 / focus trap / 닫은 뒤 PASS 버튼 복귀
+- [x] 좁은 화면 / 짧은 landscape / safe-area 대응
 
-### 축하 / Secret Photo / Combo
+### 축하 / Secret / Combo
 
-- [ ] 무제한 축하 버튼
-- [ ] global 실시간 축하 count
-- [ ] event session별 개인 tap count
-- [ ] 네트워크 호출은 tap별 호출 대신 batch 처리
-- [ ] 5회 축하 시 Secret Photo unlock
-- [ ] 10 / 31 / 100회 Cheer Combo 연출
-- [ ] R2 `EVENT_SECRET` / `SECRET_GALLERY` 별도 관리
-- [ ] Secret Photo는 기본 public manifest에 미노출
-- [ ] 공개 Cheer 랭킹은 만들지 않음
+- [x] 브라우저 로컬 무제한 축하 버튼
+- [x] session별 개인 tap count localStorage 유지
+- [x] 5회 축하 시 Secret Message unlock
+- [x] 10 / 31 / 100회 Cheer Combo 연출
+- [x] reduced-motion 환경에서 비필수 particle / transform 축소
+- [x] Android 지원 환경에서 짧은 vibration feedback
+- [ ] global 실시간 축하 count D1 연동
+- [ ] event session별 CHEER 서버 집계
+- [ ] 네트워크 batch flush
+- [ ] 실제 Secret Photo용 R2 `EVENT_SECRET` / Admin 관리
+- [ ] Secret Photo 해금 API
+- [x] 공개 Cheer 랭킹은 만들지 않음
 
 ### Scratch Card
 
-- [ ] Canvas 기반 `SCRATCH TO REVEAL`
-- [ ] 손가락으로 긁어서 비밀 카드 / 사진 / TMI 공개
-- [ ] 일정 비율 이상 긁으면 전체 자동 reveal
-- [ ] 1차는 서버 저장 없이 local-only
-- [ ] Passport 완료 상태와 연동
+- [x] Canvas 기반 `SCRATCH TO REVEAL`
+- [x] 손가락 / pointer로 긁어서 비밀 덕담 공개
+- [x] 일정 비율 이상 긁으면 전체 자동 reveal
+- [x] 접근성 / 입력 문제를 위한 `한 번에 열기` fallback
+- [x] 서버 저장 없이 local-only
+- [x] Passport 완료 상태와 연동
 
 ### Wedding Fortune / 덕담
 
-- [ ] 점술보다 참석자에게 건네는 `오늘의 축복` 카드로 구현
-- [ ] nickname + side + session seed 기반으로 같은 세션에서 같은 결과 유지
-- [ ] 건강 / 사랑 / 우정 / 좋은 인연 / 웃음 / 추억 중심의 따뜻한 문구
-- [ ] 외부 AI/API 호출 없이 사전 작성 문구 조합
-- [ ] Passport 완료 상태와 연동
+- [x] 점술보다 참석자에게 건네는 `오늘의 축복` 카드로 구현
+- [x] nickname + side + 예식일 seed 기반 동일 결과 유지
+- [x] 좋은 인연 / 웃음 / 추억 / 축하 중심의 따뜻한 문구 pool 구성
+- [x] 외부 AI/API 호출 없이 브라우저에서 결정
+- [x] Passport 완료 상태와 연동
 
-### 낙서 롤링페이퍼
+### Halloween Photo Pass
 
-- [ ] 모바일 touch Canvas 낙서
-- [ ] stroke JSON을 D1에 저장하여 이미지 저장 최소화
-- [ ] 최근 낙서를 EVENT 화면의 slider / rolling 영역에 표시
-- [ ] 5~10초 polling 기반 신규 낙서 반영
+- [x] 사진을 넣는 박스 자체가 선택 UI가 되는 반응형 디자인
+- [x] 모바일 앨범 / 카메라 이미지 선택
+- [x] 사진 위 / 가운데 / 아래 위치 조절
+- [x] 확대 조절
+- [x] 미리보기 crop과 실제 출력 crop 기준 일치
+- [x] Halloween Wedding 프레임 Canvas 합성
+- [x] Instagram Story 1080×1920 JPEG 생성
+- [x] 결과 브라우저 다운로드
+- [x] 사용자 원본 사진 서버/R2 업로드 없음
+- [x] 25MB 파일 제한 및 Canvas/Image 실패 안내
+- [x] Passport 완료 상태와 연동
+
+### EVENT UI / UX / 안정성
+
+- [x] 기본 청첩장과 EVENT 스타일 / scroll context 분리
+- [x] EVENT open 중 body scroll lock
+- [x] Escape 닫기
+- [x] modal focus trap / 원래 trigger로 focus 복귀
+- [x] `prefers-reduced-motion` 지원
+- [x] 320px대 viewport 대응
+- [x] 339px 이하 side 선택 1열 fallback
+- [x] 긴 nickname safe wrapping
+- [x] safe-area / 짧은 landscape Passport 레이아웃 보강
+- [x] 개발용 placeholder 문구 공개 화면 제거
+- [x] PR #23 최신 head 기준 CI TypeScript + Vite build 성공
+
+### 아직 서버 기능이 필요한 EVENT 항목
+
+- [ ] EVENT 입장 기록 D1 저장
+- [ ] 전체 하객 global CHEER 집계
+- [ ] session별 CHEER 서버 누적 + batch 처리
+- [ ] 모바일 touch Canvas 낙서 Rolling Paper
+- [ ] stroke JSON D1 저장
+- [ ] 최근 낙서 slider / polling 반영
 - [ ] Admin hide / delete moderation
-
-### Instagram 인증 프레임
-
-- [ ] 사진을 넣는 박스 자체가 업로드 UI가 되는 반응형 디자인
-- [ ] 앨범 / 카메라 / 가능한 환경의 drag & drop
-- [ ] Canvas 기반 확대·이동·crop
-- [ ] Halloween Wedding 프레임 합성
-- [ ] Instagram Story 1080×1920 우선
-- [ ] 결과는 브라우저에서만 생성하고 다운로드
-- [ ] 사용자 원본 사진 서버/R2 업로드 없음
+- [ ] 실제 Secret Photo R2/Admin slot + 해금 API
 
 ### 저장 비용 원칙
 
 - 하객 원본 사진 업로드 기능은 현재 계획에서 제외
-- Instagram 인증 프레임은 local-only 처리
-- Scratch / Fortune / Passport UI 대부분은 브라우저에서 처리
-- 낙서는 PNG 대신 D1 stroke JSON
+- Halloween Photo Pass는 local-only 처리
+- Scratch / Fortune / Passport UI는 브라우저에서 처리
+- 낙서는 PNG 대신 D1 stroke JSON 예정
 - R2 추가 사용은 Secret Photo 등 운영자가 올리는 정적 미디어 중심
 
 ---
@@ -268,13 +299,14 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 # 다음 할 일
 
-## 1. 실제 콘텐츠 입력
+## 1. 실제 콘텐츠 입력 / 기본 청첩장 마감
 
 - [ ] Admin `Content`에서 신랑 / 신부 / 혼주 전화번호 입력
 - [ ] Admin `Content`에서 양가 계좌 입력
 - [ ] 확인 후 연락처 / 계좌 공개 ON
 - [ ] 선별한 Hero / Gallery / OG 실제 사진 업로드
 - [ ] BGM 최종 파일 업로드 및 재생 확인
+- [ ] RSVP 최종 마감일 확정
 
 ## 2. 사진 최종 디자인 튜닝
 
@@ -282,20 +314,29 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [ ] 사진별 focal point / object-position 미세조정
 - [ ] Hero 높이 / crop 모바일 확인
 - [ ] Kakao OG 카드 실제 이미지 확인
+- [ ] 기존 Gallery 이전 버전 정리 기능 필요 여부 판단
 
-## 3. Wedding Day 기능
+## 3. Wedding Day 서버 연동 기능
 
-- [ ] Countdown `WE'RE GETTING MARRIED`
-- [ ] Pumpkin EVENT entrance / date gate
-- [ ] Halloween Event shell + nickname / side session
-- [ ] Event Passport onboarding / reopen overlay
-- [ ] Cheer / Combo / Secret Photo
-- [ ] Scratch Card
-- [ ] Wedding Fortune / 덕담 카드
-- [ ] Rolling Paper Canvas
-- [ ] local-only Halloween Instagram Frame
+- [ ] EVENT session / nickname / side / entered_at D1 저장
+- [ ] global CHEER total / session별 CHEER D1 집계
+- [ ] CHEER batch flush 및 pagehide/visibilitychange 보강
+- [ ] Rolling Paper touch Canvas UI
+- [ ] 낙서 stroke JSON D1 저장
+- [ ] 최근 낙서 polling / slider
+- [ ] Rolling Paper Admin hide / delete
+- [ ] R2 `EVENT_SECRET` / Secret Photo Admin 관리
+- [ ] 5회 CHEER Secret Photo 해금 API
 
-## 4. 공개 주소 확정
+## 4. EVENT 콘텐츠 최종화
+
+- [ ] 실제 Secret Photo 선정 / 업로드
+- [ ] Scratch Card 덕담 / TMI 문구 최종 검수
+- [ ] Wedding Fortune 문구 pool 최종 검수
+- [ ] Halloween Photo Pass 최종 문구 / 프레임 실기기 확인
+- [ ] 당일 Event Passport 항목 수를 서버 기능 포함 기준으로 최종 확정
+
+## 5. 공개 주소 확정
 
 - [ ] custom domain 선정 및 Cloudflare 연결
 - [ ] HTTPS / redirect 확인
@@ -303,16 +344,19 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 - [ ] Kakao 제품 링크 Web domain에 custom domain 추가
 - [ ] `og:url` / 공유 링크 custom domain 전환
 
-## 5. 최종 모바일 QA
+## 6. 최종 모바일 QA
 
 - [ ] Android Chrome / Samsung Internet
 - [ ] iPhone Safari
 - [ ] KakaoTalk 인앱 브라우저
 - [ ] 320~430px 주요 viewport
 - [ ] RSVP / Private Letter / Contact / Account / Share / Map / BGM 회귀 테스트
-- [ ] 이미지 로딩 성능 확인
+- [ ] Wedding Day EVENT full flow 실기기 테스트
+- [ ] Photo Pass 앨범 / 카메라 / 다운로드 확인
+- [ ] Scratch Card touch 감도 확인
+- [ ] 이미지 로딩 / interaction 성능 확인
 
-## 6. 후순위 운영 편의
+## 7. 후순위 운영 편의
 
 - [ ] RSVP 수정 / restore / server-side pagination
 - [ ] Private Letter CSV export / pagination
@@ -322,4 +366,4 @@ Production: `https://wed-mobile.robin5544.workers.dev`
 
 ## 권장 진행 순서
 
-`실제 연락처·계좌/사진 입력 → 기본 청첩장 최종 QA → Countdown → Pumpkin EVENT shell + 닉네임/side → Event Passport → Cheer/Combo/Secret Photo → Scratch/Fortune → Rolling Paper/Instagram Frame → custom domain → 당일 실기기 QA`
+`실제 연락처·계좌/사진 입력 → 기본 청첩장 최종 QA → EVENT D1 session/CHEER → Rolling Paper → Secret Photo → EVENT 콘텐츠 최종화 → custom domain → 전체 실기기 QA`
