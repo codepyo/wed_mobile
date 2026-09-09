@@ -18,6 +18,10 @@ import { shareToKakao } from './utils/share';
 import { defaultSiteConfig, fetchSiteConfig } from './utils/siteConfig';
 import { useWeddingClock } from './utils/weddingEvent';
 
+// Halloween/Wedding Day EVENT is on hold. Keep the implementation intact so it can
+// be resumed later, but do not expose its entrance or full-screen UI to guests.
+const WEDDING_EVENT_UI_ENABLED = false;
+
 function App() {
   const [toast, setToast] = useState('');
   const [media, setMedia] = useState(emptyMediaState);
@@ -101,7 +105,9 @@ function App() {
         onCopyUrl={() => copyText(getInvitationUrl(), '청첩장 주소가 복사되었습니다.')}
         canNativeShare={nativeShareAvailable}
       />
-      <WeddingEvent phase={weddingClock.phase} canEnter={weddingClock.canEnterEvent} preview={weddingClock.preview} />
+      {WEDDING_EVENT_UI_ENABLED && (
+        <WeddingEvent phase={weddingClock.phase} canEnter={weddingClock.canEnterEvent} preview={weddingClock.preview} />
+      )}
       <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={siteConfig.musicEnabled && Boolean(media.bgm?.url)} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
