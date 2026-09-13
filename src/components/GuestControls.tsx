@@ -30,6 +30,21 @@ function getFocusable(root: HTMLElement | null) {
   return Array.from(root.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
 }
 
+function trapTab(event: KeyboardEvent, root: HTMLElement | null) {
+  if (event.key !== 'Tab') return;
+  const items = getFocusable(root);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>;
 }
@@ -58,18 +73,7 @@ export function RsvpModal({ open, stage, onStageChange, onClose }: RsvpModalProp
         onClose();
         return;
       }
-      if (event.key !== 'Tab') return;
-      const items = getFocusable(panelRef.current);
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+      trapTab(event, panelRef.current);
     };
     document.addEventListener('keydown', keydown);
     return () => {
@@ -124,6 +128,8 @@ export function RsvpModal({ open, stage, onStageChange, onClose }: RsvpModalProp
 
 export function GuestDock({ rsvpEnabled, contactsVisible, accountsVisible, guestbookVisible, musicSrc, musicTitle, musicEnabled, onOpenRsvp }: GuestDockProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuSheetRef = useRef<HTMLDivElement | null>(null);
+  const previousMenuFocusRef = useRef<HTMLElement | null>(null);
   const items = useMemo<NavItem[]>(() => {
     const next: NavItem[] = [
       { id: 'invitation', index: '01', label: '초대합니다', note: 'Invitation' },
@@ -141,13 +147,24 @@ export function GuestDock({ rsvpEnabled, contactsVisible, accountsVisible, guest
 
   useEffect(() => {
     if (!menuOpen) return;
+    previousMenuFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    const timer = window.setTimeout(() => getFocusable(menuSheetRef.current)[0]?.focus(), 20);
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMenuOpen(false);
+        return;
+      }
+      trapTab(event, menuSheetRef.current);
+    };
     document.addEventListener('keydown', keydown);
     return () => {
+      window.clearTimeout(timer);
       document.removeEventListener('keydown', keydown);
       document.body.style.overflow = previousOverflow;
+      previousMenuFocusRef.current?.focus();
     };
   }, [menuOpen]);
 
@@ -164,7 +181,7 @@ export function GuestDock({ rsvpEnabled, contactsVisible, accountsVisible, guest
     </nav>
 
     {menuOpen && <div className="guest-menu-layer" onMouseDown={(event) => { if (event.target === event.currentTarget) setMenuOpen(false); }}>
-      <div className="guest-menu-sheet" role="dialog" aria-modal="true" aria-label="청첩장 바로가기 메뉴">
+      <div className="guest-menu-sheet" ref={menuSheetRef} role="dialog" aria-modal="true" aria-label="청첩장 바로가기 메뉴">
         <div className="guest-menu-sheet__head"><div><small>QUICK INDEX</small><strong>원하는 곳으로 바로가기</strong></div><button type="button" className="guest-icon-button" onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기"><CloseIcon /></button></div>
         <div className="guest-menu-sheet__list">{items.map((item) => <button key={item.id} type="button" onClick={() => navigate(item.id)}><small>{item.index}</small><span><strong>{item.label}</strong><em>{item.note}</em></span><b aria-hidden="true">↗</b></button>)}</div>
       </div>
