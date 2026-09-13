@@ -1,0 +1,197 @@
+/* Public invitation interaction polish. Keep admin styling isolated. */
+.invitation-shell :where(button, a, input, select, textarea) { -webkit-tap-highlight-color: transparent; }
+.invitation-shell :where(button, a) { touch-action: manipulation; }
+
+/* Stagger the first editorial section so its title no longer appears abruptly. */
+.invitation .section-label,
+.invitation .invitation__copy,
+.invitation .family-card {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .68s ease, transform .68s cubic-bezier(.2,.7,.25,1);
+}
+.invitation.is-visible .section-label { opacity: 1; transform: none; transition-delay: .08s; }
+.invitation.is-visible .invitation__copy { opacity: 1; transform: none; transition-delay: .18s; }
+.invitation.is-visible .family-card { opacity: 1; transform: none; transition-delay: .29s; }
+
+#invitation,
+#schedule,
+#gallery,
+#location,
+#contact,
+#account,
+#rsvp,
+#letter,
+#closing { scroll-margin-top: 18px; }
+
+/* Forms */
+.invitation-shell .form-card {
+  gap: 20px;
+  padding: clamp(22px, 6vw, 30px);
+  border: 1px solid #ded8cf;
+  border-radius: 22px;
+  background: #fffdf9;
+  box-shadow: 0 14px 36px rgba(38, 33, 28, .055);
+}
+.invitation-shell .form-card > label { gap: 9px; }
+.invitation-shell .form-card label > span,
+.invitation-shell .form-card legend { color: #3d3934; font-size: 12px; font-weight: 600; letter-spacing: -.01em; }
+.invitation-shell .form-card input,
+.invitation-shell .form-card select,
+.invitation-shell .form-card textarea {
+  min-height: 50px;
+  padding: 12px 14px;
+  border: 1px solid #ddd6cc;
+  border-radius: 13px;
+  color: #211f1c;
+  background: #f8f5ef;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.invitation-shell .form-card input::placeholder,
+.invitation-shell .form-card textarea::placeholder { color: #aaa198; }
+.invitation-shell .form-card input:focus,
+.invitation-shell .form-card select:focus,
+.invitation-shell .form-card textarea:focus {
+  border-color: #7f756a;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(92, 82, 71, .08);
+}
+.invitation-shell .form-card textarea { min-height: 112px; }
+.invitation-shell .form-inline-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.invitation-shell .form-inline-grid > label { display: grid; gap: 8px; min-width: 0; }
+
+.invitation-shell .choice-grid { gap: 9px; }
+.invitation-shell .choice-grid span {
+  min-height: 50px;
+  border: 1px solid #ddd6cc;
+  border-radius: 14px;
+  color: #48423c;
+  background: #faf7f2;
+  transition: border-color .2s ease, color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.invitation-shell .choice-grid label:active span { transform: scale(.985); }
+.invitation-shell .choice-grid input:checked + span {
+  border-color: #25221f;
+  color: #fff;
+  background: #25221f;
+  box-shadow: 0 8px 18px rgba(34, 30, 26, .12);
+}
+.invitation-shell .choice-grid--attendance span {
+  display: flex;
+  min-height: 70px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.invitation-shell .choice-grid--attendance b { font-size: 12px; font-weight: 600; }
+.invitation-shell .choice-grid--attendance small { color: #9b9288; font-size: 9px; font-weight: 400; }
+.invitation-shell .choice-grid--attendance input:checked + span small { color: rgba(255,255,255,.58); }
+.invitation-shell .form-submit:disabled { opacity: .48; box-shadow: none; cursor: wait; }
+.invitation-shell .form-status { margin-top: -5px; padding: 10px 12px; border-radius: 12px; background: #f2eee7; }
+.invitation-shell .form-closed { border: 0; border-radius: 18px; background: #f1ede6; }
+.invitation-shell .form-closed--compact { margin-top: 0; }
+
+/* Shared editorial buttons */
+.invitation-shell .utility-button,
+.invitation-shell .share-button {
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.invitation-shell .utility-button {
+  border-color: #d0c9bf;
+  background: rgba(255,255,255,.42);
+}
+.invitation-shell .utility-button:hover { background: #fff; }
+.invitation-shell .utility-button:active,
+.invitation-shell .share-button:active { transform: translateY(1px) scale(.995); }
+.invitation-shell .utility-button--dark {
+  border-color: rgba(255,255,255,.2);
+  background: rgba(255,255,255,.055);
+}
+.invitation-shell .utility-button--dark:hover { background: rgba(255,255,255,.1); }
+.invitation-shell .share-button { border: 0; box-shadow: 0 10px 24px rgba(30, 27, 23, .1); }
+
+/* Contact + account controls */
+.invitation-shell .contact-row__actions { gap: 6px; }
+.invitation-shell .contact-row__actions a {
+  min-width: 58px;
+  min-height: 40px;
+  border: 1px solid #d7d0c7;
+  border-radius: 999px;
+  background: #faf8f4;
+  font-size: 11px;
+  font-weight: 600;
+  transition: background .2s ease, transform .2s ease;
+}
+.invitation-shell .contact-row__actions a:active { background: #ece7df; transform: scale(.97); }
+
+.invitation-shell .account-groups { display: grid; gap: 10px; border: 0; }
+.invitation-shell .account-group {
+  overflow: hidden;
+  border: 1px solid #ddd6cd;
+  border-radius: 16px;
+  background: #fbf9f5;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.invitation-shell .account-group.is-open { border-color: #bcb2a6; box-shadow: 0 10px 26px rgba(38,33,28,.05); }
+.invitation-shell .account-group__toggle { min-height: 66px; padding: 0 16px; }
+.invitation-shell .account-group__toggle > span { display: grid; gap: 2px; text-align: left; }
+.invitation-shell .account-group__toggle small { color: #999087; font: 600 8px/1 var(--serif); letter-spacing: .14em; }
+.invitation-shell .account-group__toggle strong { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: #f0ece5; }
+.invitation-shell .account-group__panel { padding: 0 14px 10px; }
+.invitation-shell .account-item { padding: 17px 2px; }
+.invitation-shell .account-item button {
+  min-width: 64px;
+  min-height: 38px;
+  border: 1px solid #d8d1c8;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 10px;
+}
+
+/* Map actions become individual tactile pills instead of table-like cells. */
+.invitation-shell .map-actions {
+  gap: 7px;
+  margin-top: 10px;
+  border: 0;
+}
+.invitation-shell .map-action {
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.invitation-shell .map-action:active { border-color: rgba(255,255,255,.23); background: rgba(255,255,255,.09); transform: scale(.985); }
+
+/* Private letter controls */
+.invitation-shell .private-letter-sent { border-radius: 22px; }
+.invitation-shell .private-letter-sent__again {
+  padding: 0 17px;
+  border: 1px solid #d8d1c8;
+  border-radius: 999px;
+  background: rgba(255,255,255,.65);
+}
+.invitation-shell .turnstile-retry button { border-radius: 999px; }
+
+/* Keep toast clear of the always-on guest dock. */
+.invitation-shell .toast { bottom: max(82px, calc(env(safe-area-inset-bottom) + 74px)); border-radius: 12px; }
+.invitation-shell .closing { padding-bottom: max(110px, calc(env(safe-area-inset-bottom) + 96px)); }
+
+@media (max-width: 359px) {
+  .invitation-shell .form-inline-grid { grid-template-columns: 1fr; }
+  .invitation-shell .choice-grid--attendance { grid-template-columns: 1fr; }
+  .invitation-shell .rsvp-callout__meta { display: grid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation .section-label,
+  .invitation .invitation__copy,
+  .invitation .family-card { opacity: 1; transform: none; transition: none; }
+}

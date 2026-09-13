@@ -5,9 +5,10 @@ type Props = {
   src?: string;
   title?: string;
   enabled?: boolean;
+  variant?: 'floating' | 'dock';
 };
 
-export function MusicControl({ src, title, enabled }: Props = {}) {
+export function MusicControl({ src, title, enabled, variant = 'floating' }: Props = {}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
@@ -69,14 +70,14 @@ export function MusicControl({ src, title, enabled }: Props = {}) {
   return (
     <button
       type="button"
-      className={`music-control ${playing ? 'is-playing' : ''}`}
+      className={`music-control music-control--${variant} ${playing ? 'is-playing' : ''}`}
       onClick={toggle}
       aria-label={playing ? '배경음악 일시정지' : '배경음악 재생'}
       aria-pressed={playing}
       title={title || wedding.music.title || '배경음악'}
     >
-      <span aria-hidden="true">♪</span>
-      <small>{playing ? 'PAUSE' : ready ? 'PLAY' : 'BGM'}</small>
+      <span aria-hidden="true">{playing ? 'Ⅱ' : '♪'}</span>
+      <small>{playing ? 'MUTE' : ready ? 'BGM' : 'BGM'}</small>
     </button>
   );
 }
