@@ -1,0 +1,21 @@
+.maker-credit {
+  display: grid;
+  gap: 5px;
+  margin-top: 42px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: #9a958d;
+  text-align: center;
+}
+.maker-credit > span {
+  font: 500 8px/1.4 var(--serif);
+  letter-spacing: .15em;
+}
+.maker-credit > p {
+  font: 500 9px/1.5 var(--serif);
+  letter-spacing: .12em;
+}
+.maker-credit strong {
+  color: #5f5a53;
+  font-weight: 600;
+}

@@ -12,7 +12,15 @@
   max-width: 100%;
 }
 
-.rsvp-modal { width: min(calc(100vw - 24px), 470px); overflow-x: hidden; }
+.guest-modal-backdrop {
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+.rsvp-modal {
+  width: min(calc(100vw - 24px), 470px);
+  max-height: min(calc(100svh - 16px), 760px);
+  overflow-x: hidden;
+}
 .rsvp-modal__form-view { width: 100%; overflow-x: hidden; }
 .rsvp-modal__form-view .form-card {
   width: 100%;
@@ -41,6 +49,33 @@
 .rsvp-modal__form-view .turnstile-wrap > div,
 .rsvp-modal__form-view .turnstile-wrap iframe {
   max-width: 100% !important;
+}
+
+/* Keep the intro fully visible on common mobile heights without making the modal feel cramped. */
+.rsvp-modal__masthead {
+  min-height: 58px;
+  padding-top: 9px;
+  padding-bottom: 8px;
+}
+.rsvp-modal__intro {
+  padding: 22px clamp(20px, 5.5vw, 30px) 18px;
+}
+.rsvp-modal__intro .rsvp-modal__kicker { margin-bottom: 8px; }
+.rsvp-modal__intro .rsvp-modal__lead {
+  margin-top: 10px;
+  line-height: 1.7;
+}
+.rsvp-modal__intro .rsvp-summary-card { margin-top: 18px; }
+.rsvp-modal__intro .rsvp-summary-card > div { padding: 13px 16px 12px; }
+.rsvp-modal__intro .rsvp-summary-card > i { margin-inline: 16px; }
+.rsvp-modal__intro .rsvp-modal__address { margin-top: 8px; }
+.rsvp-modal__intro .editorial-cta {
+  min-height: 52px;
+  margin-top: 16px;
+}
+.rsvp-modal__intro .text-button {
+  margin-top: 8px;
+  padding-block: 6px;
 }
 
 /* Keep the long venue name as a deliberate full-width line instead of orphaning one Hangul character. */
@@ -83,4 +118,15 @@
   .rsvp-summary-card > div { padding-inline: 16px; }
   .rsvp-summary-card > i { margin-inline: 16px; }
   .guest-dock__button--rsvp { min-width: 78px; }
+}
+
+@media (max-height: 680px) {
+  .rsvp-modal__intro { padding-top: 16px; padding-bottom: 12px; }
+  .rsvp-modal__intro .rsvp-modal__kicker { margin-bottom: 6px; }
+  .rsvp-modal__intro .rsvp-modal__lead { margin-top: 7px; font-size: 12px; line-height: 1.55; }
+  .rsvp-modal__intro .rsvp-summary-card { margin-top: 12px; }
+  .rsvp-modal__intro .rsvp-summary-card > div { padding-top: 10px; padding-bottom: 9px; }
+  .rsvp-modal__intro .rsvp-modal__address { margin-top: 6px; line-height: 1.45; }
+  .rsvp-modal__intro .editorial-cta { min-height: 48px; margin-top: 12px; }
+  .rsvp-modal__intro .text-button { margin-top: 5px; }
 }

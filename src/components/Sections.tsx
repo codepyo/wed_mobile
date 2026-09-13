@@ -129,6 +129,10 @@ export function ClosingSection({ onShare, onCopyUrl, onKakaoShare, canNativeShar
         <button type="button" className="utility-button" onClick={onCopyUrl}><CopyIcon /><span>URL 복사</span></button>
       </div>
       <p className="closing__note">WE LOOK FORWARD TO SEEING YOU</p>
+      <div className="maker-credit" aria-label="청첩장 제작자">
+        <span>© 2026 · A PERSONAL DIGITAL INVITATION</span>
+        <p>DESIGNED &amp; DEVELOPED BY <strong>SEUNGPYO</strong></p>
+      </div>
     </section>
   );
 }
