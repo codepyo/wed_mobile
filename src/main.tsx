@@ -12,6 +12,7 @@ import './styles/event.css';
 import './styles/event-live.css';
 import './styles/event-quality.css';
 import './styles/quality.css';
+import './styles/polish.css';
 import './styles/admin.css';
 import './styles/admin-media.css';
 import './styles/admin-content.css';
