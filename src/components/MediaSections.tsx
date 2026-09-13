@@ -28,8 +28,8 @@ export function MediaGallerySection({ images }: { images?: WeddingImage[] }) {
 
   return (
     <section className="section gallery" id="gallery" data-reveal>
-      <SectionLabel index="02" eyebrow="Our Moments" title="우리의 순간" />
-      <p className="gallery__intro">함께 지나온 시간 속,<br />오래 기억하고 싶은 순간들을 담았습니다.</p>
+      <SectionLabel index="02" eyebrow="Wedding Portraits" title="우리의 웨딩" />
+      <p className="gallery__intro">결혼을 앞둔 두 사람의 모습을,<br />한 장면씩 담았습니다.</p>
       <div className="gallery-grid">{gallery.map((image, index) => <button className={`gallery-grid__button gallery-grid__item--${index + 1}`} type="button" key={`${image.src}-${index}`} onClick={() => setActiveIndex(index)} aria-label={`${image.alt} 크게 보기`}><PhotoFrame src={image.src} alt={image.alt} ratio={image.ratio} position={image.position} /></button>)}</div>
       {activeIndex !== null && <Lightbox images={gallery} index={activeIndex} onChange={setActiveIndex} onClose={() => setActiveIndex(null)} />}
     </section>
