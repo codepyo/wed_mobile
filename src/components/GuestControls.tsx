@@ -134,7 +134,7 @@ export function GuestDock({ rsvpEnabled, contactsVisible, accountsVisible, guest
     const next: NavItem[] = [
       { id: 'invitation', index: '01', label: '초대합니다', note: 'Invitation' },
       { id: 'schedule', index: '02', label: '예식 일정', note: 'Wedding Day' },
-      { id: 'gallery', index: '03', label: '우리의 순간', note: 'Gallery' },
+      { id: 'gallery', index: '03', label: '우리의 웨딩', note: 'Gallery' },
       { id: 'location', index: '04', label: '오시는 길', note: 'Location' },
     ];
     if (contactsVisible) next.push({ id: 'contact', index: '05', label: '연락하기', note: 'Contact' });
