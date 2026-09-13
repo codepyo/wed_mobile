@@ -18,7 +18,7 @@ type CommonProps = {
 
 export function InvitationSection() {
   return (
-    <section className="section invitation" data-reveal>
+    <section className="section invitation" id="invitation" data-reveal>
       <SectionLabel index="01" eyebrow="Invitation" title="초대합니다" />
       <div className="invitation__copy">
         {wedding.invitation.map((line, index) => (
@@ -42,7 +42,7 @@ export function InvitationSection() {
 export function DateSection({ dday, momentText }: Pick<CommonProps, 'dday' | 'momentText'>) {
   const momentActive = momentText !== dday;
   return (
-    <section className="date-section" data-reveal>
+    <section className="date-section" id="schedule" data-reveal>
       <div className="date-section__topline"><span>THE WEDDING DAY</span><span className={momentActive ? 'is-wedding-moment' : ''} aria-live="polite">{momentText}</span></div>
       <div className="date-section__headline" aria-label="2026년 10월 31일"><span>OCT</span><strong>31</strong><span>2026</span></div>
       <p className="date-section__ceremony">{wedding.ceremony.year}년 {wedding.ceremony.month}월 {wedding.ceremony.day}일 {wedding.ceremony.weekday} · {wedding.ceremony.time}</p>
@@ -58,7 +58,7 @@ export function ContactSection({ enabled, people }: { enabled: boolean; people: 
   if (!enabled || !visiblePeople.length) return null;
 
   return (
-    <section className="section contact-section" data-reveal>
+    <section className="section contact-section" id="contact" data-reveal>
       <SectionLabel index="04" eyebrow="Contact" title="연락하기" />
       <div className="contact-list">
         {visiblePeople.map((person) => {
@@ -78,15 +78,7 @@ export function ContactSection({ enabled, people }: { enabled: boolean; people: 
   );
 }
 
-export function AccountSection({
-  enabled,
-  accounts,
-  onCopyText,
-}: {
-  enabled: boolean;
-  accounts: { groom: AccountItem[]; bride: AccountItem[] };
-  onCopyText: CommonProps['onCopyText'];
-}) {
+export function AccountSection({ enabled, accounts, onCopyText }: { enabled: boolean; accounts: { groom: AccountItem[]; bride: AccountItem[] }; onCopyText: CommonProps['onCopyText'] }) {
   const [openSide, setOpenSide] = useState<'groom' | 'bride' | null>(null);
   const hasAccounts = accounts.groom.length > 0 || accounts.bride.length > 0;
   if (!enabled || !hasAccounts) return null;
@@ -97,7 +89,7 @@ export function AccountSection({
   ].filter((group) => group.items.length > 0);
 
   return (
-    <section className="section account-section" data-reveal>
+    <section className="section account-section" id="account" data-reveal>
       <SectionLabel index="05" eyebrow="With Gratitude" title="마음 전하실 곳" />
       <p className="account-section__intro">멀리서도 축하의 마음을 전하고 싶으신 분들을 위해 계좌번호를 안내드립니다.</p>
       <div className="account-groups">
@@ -105,28 +97,16 @@ export function AccountSection({
           const open = openSide === group.key;
           const panelId = `account-panel-${group.key}`;
           return (
-            <article className="account-group" key={group.key}>
-              <button
-                type="button"
-                className="account-group__toggle"
-                aria-expanded={open}
-                aria-controls={panelId}
-                onClick={() => setOpenSide(open ? null : group.key)}
-              >
-                <span>{group.title} 계좌 보기</span><strong aria-hidden="true">{open ? '−' : '+'}</strong>
+            <article className={`account-group ${open ? 'is-open' : ''}`} key={group.key}>
+              <button type="button" className="account-group__toggle" aria-expanded={open} aria-controls={panelId} onClick={() => setOpenSide(open ? null : group.key)}>
+                <span><small>{group.key === 'groom' ? 'GROOM FAMILY' : 'BRIDE FAMILY'}</small>{group.title} 계좌</span><strong aria-hidden="true">{open ? '−' : '+'}</strong>
               </button>
-              {open && (
-                <div className="account-group__panel" id={panelId}>
-                  {group.items.map((item) => (
-                    <div className="account-item" key={item.id}>
-                      <div><small>{item.label}</small><strong>{item.bank} {item.accountNumber}</strong><span>예금주 {item.holder}</span></div>
-                      <button type="button" onClick={() => onCopyText(item.accountNumber.replace(/\s/g, ''), `${item.label} 계좌번호가 복사되었습니다.`)}>
-                        <CopyIcon /><span>복사</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {open && <div className="account-group__panel" id={panelId}>
+                {group.items.map((item) => <div className="account-item" key={item.id}>
+                  <div><small>{item.label}</small><strong>{item.bank} {item.accountNumber}</strong><span>예금주 {item.holder}</span></div>
+                  <button type="button" onClick={() => onCopyText(item.accountNumber.replace(/\s/g, ''), `${item.label} 계좌번호가 복사되었습니다.`)}><CopyIcon /><span>복사</span></button>
+                </div>)}
+              </div>}
             </article>
           );
         })}
@@ -135,14 +115,9 @@ export function AccountSection({
   );
 }
 
-export function ClosingSection({
-  onShare,
-  onCopyUrl,
-  onKakaoShare,
-  canNativeShare,
-}: Pick<CommonProps, 'onShare' | 'onCopyUrl' | 'onKakaoShare' | 'canNativeShare'>) {
+export function ClosingSection({ onShare, onCopyUrl, onKakaoShare, canNativeShare }: Pick<CommonProps, 'onShare' | 'onCopyUrl' | 'onKakaoShare' | 'canNativeShare'>) {
   return (
-    <section className="closing" data-reveal>
+    <section className="closing" id="closing" data-reveal>
       <p className="closing__eyebrow">SAVE THE DATE</p>
       <h2><span>{wedding.couple.groom.name}</span><em>&amp;</em><span>{wedding.couple.bride.name}</span></h2>
       <p className="closing__date">2026. 10. 31 · SATURDAY · 12:00</p>
