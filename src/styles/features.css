@@ -69,13 +69,9 @@
 .closing__actions .share-button { margin-top: 0; }
 .closing__actions .utility-button { width: 100%; }
 .music-control {
-  position: fixed;
-  z-index: 90;
-  right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
+  display: grid;
   width: 54px;
   height: 54px;
-  display: grid;
   place-items: center;
   align-content: center;
   gap: 0;
@@ -86,6 +82,12 @@
   box-shadow: 0 8px 28px rgba(0,0,0,.18);
   backdrop-filter: blur(8px);
   cursor: pointer;
+}
+.music-control--floating {
+  position: fixed;
+  z-index: 90;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
 }
 .music-control > span { font-family: var(--serif); font-size: 19px; line-height: 1; }
 .music-control small { margin-top: 1px; font-size: 6px; letter-spacing: .12em; }
