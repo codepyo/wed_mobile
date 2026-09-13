@@ -54,7 +54,7 @@ function MenuIcon() {
 }
 
 function RsvpIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h10M7 12h10M7 19h6" /><circle cx="4" cy="5" r=".7" fill="currentColor" stroke="none" /><circle cx="4" cy="12" r=".7" fill="currentColor" stroke="none" /><circle cx="4" cy="19" r=".7" fill="currentColor" stroke="none" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7.5" r="3" /><path d="M3.5 19c.4-3.4 2.5-5.4 5.5-5.4 1.6 0 2.9.5 3.9 1.4" /><path d="m15.2 17.1 1.8 1.8 3.8-4.2" /></svg>;
 }
 
 export function RsvpModal({ open, stage, onStageChange, onClose }: RsvpModalProps) {
