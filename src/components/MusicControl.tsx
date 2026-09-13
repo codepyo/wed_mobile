@@ -16,6 +16,7 @@ export function MusicControl({ src, title, enabled, variant = 'floating' }: Prop
 
   const resolvedSrc = src ?? wedding.music.src;
   const resolvedEnabled = enabled ?? (wedding.features.music && Boolean(wedding.music.src));
+  const available = resolvedEnabled && Boolean(resolvedSrc) && !failed;
 
   useEffect(() => {
     setPlaying(false);
@@ -51,9 +52,10 @@ export function MusicControl({ src, title, enabled, variant = 'floating' }: Prop
     };
   }, [resolvedEnabled, resolvedSrc]);
 
-  if (!resolvedEnabled || !resolvedSrc || failed) return null;
+  if (variant === 'floating' && !available) return null;
 
   const toggle = async () => {
+    if (!available) return;
     const audio = audioRef.current;
     if (!audio) return;
     if (!audio.paused) {
@@ -67,17 +69,21 @@ export function MusicControl({ src, title, enabled, variant = 'floating' }: Prop
     }
   };
 
+  const label = playing ? '음소거' : available ? '재생' : 'BGM';
+  const ariaLabel = !available ? '배경음악이 아직 준비되지 않았습니다.' : playing ? '배경음악 음소거' : '배경음악 재생';
+
   return (
     <button
       type="button"
-      className={`music-control music-control--${variant} ${playing ? 'is-playing' : ''}`}
+      className={`music-control music-control--${variant} ${playing ? 'is-playing' : ''} ${!available ? 'is-unavailable' : ''}`}
       onClick={toggle}
-      aria-label={playing ? '배경음악 일시정지' : '배경음악 재생'}
-      aria-pressed={playing}
-      title={title || wedding.music.title || '배경음악'}
+      aria-label={ariaLabel}
+      aria-pressed={available ? playing : undefined}
+      title={!available ? '배경음악 준비 중' : title || wedding.music.title || '배경음악'}
+      disabled={!available}
     >
       <span aria-hidden="true">{playing ? 'Ⅱ' : '♪'}</span>
-      <small>{playing ? 'MUTE' : ready ? 'BGM' : 'BGM'}</small>
+      <small>{label}</small>
     </button>
   );
 }

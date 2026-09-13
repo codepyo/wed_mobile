@@ -176,7 +176,7 @@ export function GuestDock({ rsvpEnabled, contactsVisible, accountsVisible, guest
   return <>
     <nav className="guest-dock" aria-label="빠른 메뉴">
       <button type="button" className="guest-dock__button" onClick={() => setMenuOpen(true)} aria-label="청첩장 목록 열기"><MenuIcon /><span>MENU</span></button>
-      {rsvpEnabled && <button type="button" className="guest-dock__button guest-dock__button--rsvp" onClick={onOpenRsvp}><RsvpIcon /><span>RSVP</span></button>}
+      {rsvpEnabled && <button type="button" className="guest-dock__button guest-dock__button--rsvp" onClick={onOpenRsvp} aria-label="참석 여부 입력 열기"><RsvpIcon /><span>참석여부</span></button>}
       <MusicControl src={musicSrc} title={musicTitle} enabled={musicEnabled} variant="dock" />
     </nav>
 

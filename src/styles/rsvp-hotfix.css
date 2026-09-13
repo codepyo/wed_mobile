@@ -1,0 +1,86 @@
+/* RSVP modal/mobile containment fixes. Loaded after general polish overrides. */
+.rsvp-modal,
+.rsvp-modal__form-view,
+.rsvp-modal__form-view .form-card,
+.rsvp-modal__form-view .form-card > *,
+.rsvp-modal__form-view fieldset,
+.rsvp-modal__form-view label,
+.rsvp-modal__form-view .choice-grid,
+.rsvp-modal__form-view .turnstile-block,
+.rsvp-modal__form-view .turnstile-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rsvp-modal { width: min(calc(100vw - 24px), 470px); overflow-x: hidden; }
+.rsvp-modal__form-view { width: 100%; overflow-x: hidden; }
+.rsvp-modal__form-view .form-card {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rsvp-modal__form-view .form-card input,
+.rsvp-modal__form-view .form-card select,
+.rsvp-modal__form-view .form-card textarea,
+.rsvp-modal__form-view .form-submit {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rsvp-modal__form-view .choice-grid,
+.rsvp-modal__form-view .form-inline-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rsvp-modal__form-view .turnstile-wrap,
+.rsvp-modal__form-view .turnstile-wrap > div,
+.rsvp-modal__form-view .turnstile-wrap iframe {
+  max-width: 100% !important;
+}
+
+/* Keep the long venue name as a deliberate full-width line instead of orphaning one Hangul character. */
+.rsvp-summary-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.rsvp-summary-card > div { padding: 18px 18px 17px; }
+.rsvp-summary-card > i {
+  width: auto;
+  height: 1px;
+  min-height: 1px;
+  margin: 0 18px;
+  background: #e4ddd4;
+}
+.rsvp-summary-card strong {
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.rsvp-summary-card > div:last-child strong {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.guest-dock__button--rsvp { min-width: 84px; }
+.music-control--dock.is-unavailable {
+  color: #aaa198;
+  background: transparent;
+  cursor: default;
+  opacity: .72;
+}
+.music-control--dock:disabled:active { transform: none; }
+
+@media (max-width: 359px) {
+  .rsvp-modal__form-view { padding-inline: 14px; }
+  .rsvp-modal__form-view .choice-grid,
+  .rsvp-modal__form-view .form-inline-grid { grid-template-columns: minmax(0, 1fr); }
+  .rsvp-summary-card > div { padding-inline: 16px; }
+  .rsvp-summary-card > i { margin-inline: 16px; }
+  .guest-dock__button--rsvp { min-width: 78px; }
+}
