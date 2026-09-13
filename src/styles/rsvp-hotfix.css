@@ -67,6 +67,7 @@
   line-height: 1.5;
 }
 
+.guest-dock__button--rsvp { min-width: 84px; }
 .music-control--dock.is-unavailable {
   color: #aaa198;
   background: transparent;
@@ -81,4 +82,5 @@
   .rsvp-modal__form-view .form-inline-grid { grid-template-columns: minmax(0, 1fr); }
   .rsvp-summary-card > div { padding-inline: 16px; }
   .rsvp-summary-card > i { margin-inline: 16px; }
+  .guest-dock__button--rsvp { min-width: 78px; }
 }
