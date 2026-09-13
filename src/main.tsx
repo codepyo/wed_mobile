@@ -7,6 +7,7 @@ import './styles/hero-typography.css';
 import './styles/features.css';
 import './styles/forms.css';
 import './styles/map.css';
+import './styles/guest-controls.css';
 import './styles/event.css';
 import './styles/event-live.css';
 import './styles/event-quality.css';
