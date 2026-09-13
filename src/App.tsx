@@ -8,8 +8,8 @@ import {
 } from './components/Sections';
 import { MediaGallerySection, MediaHeroSection } from './components/MediaSections';
 import { GuestbookSection, RsvpSection } from './components/InteractiveSections';
+import { GuestDock, RsvpModal, type RsvpModalStage } from './components/GuestControls';
 import { LocationSection } from './components/LocationSection';
-import { MusicControl } from './components/MusicControl';
 import { WeddingEvent } from './components/WeddingEvent';
 import { wedding } from './data/wedding';
 import { canUseNativeShare, copyToClipboard, getInvitationUrl } from './utils/browser';
@@ -18,14 +18,17 @@ import { shareToKakao } from './utils/share';
 import { defaultSiteConfig, fetchSiteConfig } from './utils/siteConfig';
 import { useWeddingClock } from './utils/weddingEvent';
 
-// Halloween/Wedding Day EVENT is on hold. Keep the implementation intact so it can
-// be resumed later, but do not expose its entrance or full-screen UI to guests.
 const WEDDING_EVENT_UI_ENABLED = false;
+const RSVP_PROMPT_SEEN_KEY = 'wedding-rsvp-prompt-seen-v1';
+const RSVP_SUBMITTED_KEY = 'wedding-rsvp-submitted-v1';
 
 function App() {
   const [toast, setToast] = useState('');
   const [media, setMedia] = useState(emptyMediaState);
   const [siteConfig, setSiteConfig] = useState(defaultSiteConfig);
+  const [siteConfigReady, setSiteConfigReady] = useState(false);
+  const [rsvpModalOpen, setRsvpModalOpen] = useState(false);
+  const [rsvpStage, setRsvpStage] = useState<RsvpModalStage>('intro');
   const weddingClock = useWeddingClock();
   const nativeShareAvailable = canUseNativeShare();
 
@@ -33,6 +36,7 @@ function App() {
     void Promise.all([fetchPublicMedia(), fetchSiteConfig()]).then(([nextMedia, config]) => {
       setMedia(nextMedia);
       setSiteConfig(config);
+      setSiteConfigReady(true);
     });
   }, []);
 
@@ -57,6 +61,35 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  const deadline = siteConfig.rsvpDeadline ? Date.parse(siteConfig.rsvpDeadline) : Number.NaN;
+  const rsvpAvailable = wedding.features.rsvp && siteConfig.rsvpEnabled && !(Number.isFinite(deadline) && Date.now() > deadline);
+
+  useEffect(() => {
+    if (!siteConfigReady || !rsvpAvailable) return;
+    let seen = false;
+    let submitted = false;
+    try {
+      seen = localStorage.getItem(RSVP_PROMPT_SEEN_KEY) === '1';
+      submitted = localStorage.getItem(RSVP_SUBMITTED_KEY) === '1';
+    } catch { /* private/storage-restricted browsers still work */ }
+    if (seen || submitted) return;
+    const timer = window.setTimeout(() => {
+      setRsvpStage('intro');
+      setRsvpModalOpen(true);
+    }, 650);
+    return () => window.clearTimeout(timer);
+  }, [siteConfigReady, rsvpAvailable]);
+
+  const openRsvp = (stage: RsvpModalStage = 'intro') => {
+    setRsvpStage(stage);
+    setRsvpModalOpen(true);
+  };
+
+  const closeRsvp = () => {
+    setRsvpModalOpen(false);
+    try { localStorage.setItem(RSVP_PROMPT_SEEN_KEY, '1'); } catch { /* non-critical */ }
+  };
+
   const copyText = async (value: string, success: string) => {
     const copied = await copyToClipboard(value);
     setToast(copied ? success : '복사하지 못했습니다.');
@@ -65,12 +98,10 @@ function App() {
   const shareInvitation = async () => {
     const url = getInvitationUrl();
     const shareData = { title: wedding.share.title, text: wedding.share.description, url };
-
     if (!canUseNativeShare()) {
       await copyText(url, '청첩장 주소가 복사되었습니다.');
       return;
     }
-
     try {
       await navigator.share(shareData);
     } catch (error) {
@@ -88,6 +119,9 @@ function App() {
     }
   };
 
+  const contactsVisible = siteConfig.contactsEnabled && siteConfig.contacts.some((person) => person.phone.trim());
+  const accountsVisible = siteConfig.accountsEnabled && (siteConfig.accounts.groom.length > 0 || siteConfig.accounts.bride.length > 0);
+
   return (
     <main className="invitation-shell">
       <MediaHeroSection image={media.hero} />
@@ -97,7 +131,7 @@ function App() {
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
       <ContactSection enabled={siteConfig.contactsEnabled} people={siteConfig.contacts} />
       <AccountSection enabled={siteConfig.accountsEnabled} accounts={siteConfig.accounts} onCopyText={copyText} />
-      <RsvpSection />
+      <RsvpSection onOpen={() => openRsvp('form')} />
       <GuestbookSection />
       <ClosingSection
         onShare={shareInvitation}
@@ -105,10 +139,19 @@ function App() {
         onCopyUrl={() => copyText(getInvitationUrl(), '청첩장 주소가 복사되었습니다.')}
         canNativeShare={nativeShareAvailable}
       />
-      {WEDDING_EVENT_UI_ENABLED && (
-        <WeddingEvent phase={weddingClock.phase} canEnter={weddingClock.canEnterEvent} preview={weddingClock.preview} />
-      )}
-      <MusicControl src={media.bgm?.url || ''} title={media.bgm?.altText || '배경음악'} enabled={siteConfig.musicEnabled && Boolean(media.bgm?.url)} />
+      {WEDDING_EVENT_UI_ENABLED && <WeddingEvent phase={weddingClock.phase} canEnter={weddingClock.canEnterEvent} preview={weddingClock.preview} />}
+
+      <GuestDock
+        rsvpEnabled={rsvpAvailable}
+        contactsVisible={contactsVisible}
+        accountsVisible={accountsVisible}
+        guestbookVisible={wedding.features.guestbook && siteConfig.guestbookEnabled}
+        musicSrc={media.bgm?.url || ''}
+        musicTitle={media.bgm?.altText || '배경음악'}
+        musicEnabled={siteConfig.musicEnabled && Boolean(media.bgm?.url)}
+        onOpenRsvp={() => openRsvp('intro')}
+      />
+      <RsvpModal open={rsvpModalOpen} stage={rsvpStage} onStageChange={setRsvpStage} onClose={closeRsvp} />
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
     </main>
   );
