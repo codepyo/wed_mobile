@@ -19,6 +19,7 @@ import { defaultSiteConfig, fetchSiteConfig } from './utils/siteConfig';
 import { useWeddingClock } from './utils/weddingEvent';
 
 const WEDDING_EVENT_UI_ENABLED = false;
+const PUBLIC_CONTACT_UI_ENABLED = false;
 const RSVP_PROMPT_SEEN_KEY = 'wedding-rsvp-prompt-seen-v1';
 const RSVP_SUBMITTED_KEY = 'wedding-rsvp-submitted-v1';
 
@@ -119,7 +120,7 @@ function App() {
     }
   };
 
-  const contactsVisible = siteConfig.contactsEnabled && siteConfig.contacts.some((person) => person.phone.trim());
+  const contactsVisible = PUBLIC_CONTACT_UI_ENABLED && siteConfig.contactsEnabled && siteConfig.contacts.some((person) => person.phone.trim());
   const accountsVisible = siteConfig.accountsEnabled && (siteConfig.accounts.groom.length > 0 || siteConfig.accounts.bride.length > 0);
 
   return (
@@ -129,7 +130,7 @@ function App() {
       <DateSection dday={weddingClock.dday} momentText={weddingClock.momentText} />
       <MediaGallerySection images={media.gallery} />
       <LocationSection onCopyAddress={() => copyText(wedding.ceremony.address, '주소가 복사되었습니다.')} />
-      <ContactSection enabled={siteConfig.contactsEnabled} people={siteConfig.contacts} />
+      {PUBLIC_CONTACT_UI_ENABLED && <ContactSection enabled={siteConfig.contactsEnabled} people={siteConfig.contacts} />}
       <AccountSection enabled={siteConfig.accountsEnabled} accounts={siteConfig.accounts} onCopyText={copyText} />
       <RsvpSection onOpen={() => openRsvp('form')} />
       <GuestbookSection />
