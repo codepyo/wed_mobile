@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import EventAdminPanel, { type EventAdminData, type EventAdminDrawing } from './EventAdminPanel';
 
 type DashboardData = {
@@ -163,7 +163,7 @@ export default function AdminApp() {
     setNotice('');
     try {
       if (view === 'dashboard') await loadDashboard();
-      if (view === 'rsvp') await loadRsvp();
+      if (view === 'rsvp') await Promise.all([loadRsvp(), loadDashboard()]);
       if (view === 'guestbook') await loadLetters();
       if (view === 'content') await loadContent();
       if (view === 'media') await loadMedia();
@@ -192,7 +192,6 @@ export default function AdminApp() {
           : view === 'media' ? 'MEDIA'
             : view === 'event' ? 'HALLOWEEN EVENT'
               : 'SETTINGS';
-  const attendingPeople = useMemo(() => rsvpItems.reduce((sum, item) => sum + (item.attendance === 'YES' ? Number(item.guest_count || 0) : 0), 0), [rsvpItems]);
 
   const rsvpDelete = async (item: RsvpItem) => {
     if (!window.confirm(`${item.name}님의 RSVP 응답을 삭제할까요?`)) return;
@@ -402,7 +401,7 @@ export default function AdminApp() {
           </>}
 
           {view === 'rsvp' && <>
-            <section className="admin-kpis admin-kpis--compact"><article><small>조회 응답</small><strong>{number(rsvpItems.length)}</strong><span>건</span></article><article><small>조회 참석 인원</small><strong>{number(attendingPeople)}</strong><span>명</span></article></section>
+            <section className="admin-kpis admin-kpis--compact" aria-label="RSVP 참석 인원 통계"><article><small>조회 응답</small><strong>{number(rsvpItems.length)}</strong><span>건</span></article><article><small>신랑측 참석</small><strong>{number(data?.rsvp?.groom_people)}</strong><span>명</span></article><article><small>신부측 참석</small><strong>{number(data?.rsvp?.bride_people)}</strong><span>명</span></article><article><small>참석 합계</small><strong>{number(data?.rsvp?.attending_people)}</strong><span>명</span></article></section>
             <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>이름</th><th>구분</th><th>참석</th><th>인원</th><th>식사</th><th>전달사항</th><th>등록일</th><th></th></tr></thead><tbody>{rsvpItems.map((item) => <tr key={item.id}><td><strong>{item.name}</strong></td><td>{sideLabel(item.side)}</td><td>{item.attendance === 'YES' ? '참석' : '불참'}</td><td>{item.attendance === 'YES' ? `${item.guest_count || 0}명` : '-'}</td><td>{item.meal === 'YES' ? '예정' : item.meal === 'NO' ? '안 함' : item.meal === 'UNKNOWN' ? '미정' : '-'}</td><td className="admin-table__message">{item.message || '-'}</td><td>{dateLabel(item.created_at)}</td><td><button className="admin-danger" onClick={() => void rsvpDelete(item)}>삭제</button></td></tr>)}</tbody></table></div>{!rsvpItems.length && <p className="admin-empty">조회된 RSVP 응답이 없습니다.</p>}</section>
           </>}
 
