@@ -11,3 +11,418 @@
 @media (max-width: 700px) {
   .admin-media-fields { grid-template-columns: 1fr; }
 }
+
+
+/* Private Wedding Trailer QA */
+.admin-trailer-upload {
+  display: grid;
+  gap: 18px;
+  border-color: #c8c2b8;
+  background:
+    linear-gradient(135deg, rgba(26,25,23,.035), transparent 34%),
+    #fff;
+}
+
+.admin-trailer-preview-link {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #1b1b1b;
+  border-radius: 999px;
+  color: #fff;
+  background: #1b1b1b;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.admin-trailer-note {
+  display: grid;
+  gap: 6px;
+  padding: 15px 16px;
+  border: 1px solid #e2ded7;
+  background: #faf9f6;
+}
+
+.admin-trailer-note strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-trailer-note span {
+  color: #777169;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.admin-trailer-current {
+  display: grid;
+  grid-template-columns: 120px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid #ece9e4;
+  border-bottom: 1px solid #ece9e4;
+}
+
+.admin-trailer-current span,
+.admin-trailer-current em {
+  color: #827c74;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.admin-trailer-current strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-trailer-file {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-trailer-file > span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.admin-trailer-file input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #d3d0ca;
+  background: #fff;
+  color: #1b1b1b;
+  font: inherit;
+  font-size: 12px;
+}
+
+.admin-trailer-progress {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-trailer-progress > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  color: #6f6a63;
+  font-size: 11px;
+}
+
+.admin-trailer-progress > div strong {
+  color: #1b1b1b;
+  font-size: 12px;
+}
+
+.admin-trailer-progress > i {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9e6df;
+}
+
+.admin-trailer-progress > i > b {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #1b1b1b;
+  transition: width .2s ease;
+}
+
+.admin-trailer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-trailer-actions button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #1b1b1b;
+  border-radius: 999px;
+  color: #fff;
+  background: #1b1b1b;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.admin-trailer-actions button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.admin-trailer-actions .admin-trailer-cancel {
+  color: #6e3732;
+  border-color: #dcc6c2;
+  background: #fff9f8;
+}
+
+/* /admin?preview=trailer */
+.trailer-preview-page {
+  min-height: 100vh;
+  color: #171717;
+  background: #f7f5f1;
+  font-family: var(--sans);
+}
+
+.trailer-preview-bar {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: 58px;
+  padding: max(10px, env(safe-area-inset-top)) clamp(14px,3vw,28px) 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  color: #fff;
+  background: rgba(8,8,8,.72);
+  backdrop-filter: blur(16px);
+}
+
+.trailer-preview-bar > div {
+  display: grid;
+  gap: 2px;
+}
+
+.trailer-preview-bar small {
+  color: rgba(255,255,255,.56);
+  font-size: 8px;
+  letter-spacing: .18em;
+}
+
+.trailer-preview-bar strong {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.trailer-preview-bar a {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.trailer-preview-film {
+  position: relative;
+  min-height: 100svh;
+  padding: clamp(88px,12vh,126px) clamp(16px,4vw,52px) clamp(52px,8vh,88px);
+  display: grid;
+  align-content: center;
+  gap: clamp(28px,5vh,48px);
+  overflow: hidden;
+  color: #f4f0e8;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(255,255,255,.065), transparent 27%),
+    radial-gradient(circle at 16% 70%, rgba(255,255,255,.035), transparent 32%),
+    #0a0a0a;
+}
+
+.trailer-preview-film::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 46px 46px;
+}
+
+.trailer-preview-film__copy,
+.trailer-preview-player,
+.trailer-preview-cue {
+  position: relative;
+  z-index: 1;
+}
+
+.trailer-preview-film__copy {
+  width: min(100%, 920px);
+  margin: 0 auto;
+}
+
+.trailer-preview-film__copy p,
+.trailer-preview-film__copy span {
+  font-size: clamp(8px,1vw,10px);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.trailer-preview-film__copy p {
+  margin-bottom: 14px;
+  color: rgba(244,240,232,.52);
+}
+
+.trailer-preview-film__copy h1 {
+  max-width: 700px;
+  font-family: var(--serif);
+  font-size: clamp(46px,9vw,104px);
+  font-weight: 400;
+  line-height: .82;
+  letter-spacing: -.055em;
+}
+
+.trailer-preview-film__copy span {
+  display: block;
+  margin-top: 20px;
+  color: rgba(244,240,232,.64);
+}
+
+.trailer-preview-player {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+}
+
+.trailer-preview-player video {
+  display: block;
+  width: 100%;
+  max-height: min(64svh, 700px);
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border: 1px solid rgba(255,255,255,.12);
+  background: #000;
+  box-shadow: 0 30px 90px rgba(0,0,0,.42);
+}
+
+.trailer-preview-state {
+  min-height: min(56vw, 520px);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 32px;
+  border: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.72);
+  background: rgba(255,255,255,.025);
+  text-align: center;
+}
+
+.trailer-preview-state strong {
+  color: #fff;
+  font-family: var(--serif-kr);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.trailer-preview-state span {
+  color: rgba(255,255,255,.5);
+  font-size: 11px;
+}
+
+.trailer-preview-player__meta {
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: rgba(244,240,232,.5);
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+.trailer-preview-compat {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,220,162,.16);
+  color: rgba(255,235,200,.7);
+  background: rgba(160,112,36,.08);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.trailer-preview-cue {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: rgba(244,240,232,.44);
+  font-size: 8px;
+  letter-spacing: .2em;
+}
+
+.trailer-preview-cue i {
+  width: 1px;
+  height: 42px;
+  background: linear-gradient(to bottom, rgba(244,240,232,.6), transparent);
+}
+
+.trailer-preview-invitation {
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--paper);
+}
+
+.trailer-preview-invitation .invitation {
+  min-height: 100svh;
+}
+
+@media (max-width: 700px) {
+  .admin-trailer-current {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .admin-trailer-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-trailer-actions button,
+  .admin-trailer-preview-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .trailer-preview-film {
+    padding-inline: 12px;
+  }
+
+  .trailer-preview-film__copy {
+    padding-inline: 8px;
+  }
+
+  .trailer-preview-film__copy h1 {
+    font-size: clamp(48px,17vw,78px);
+  }
+
+  .trailer-preview-player__meta {
+    padding-inline: 4px;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 420px) {
+  .trailer-preview-bar strong {
+    font-size: 13px;
+  }
+
+  .trailer-preview-bar a {
+    padding-inline: 10px;
+    font-size: 9px;
+  }
+
+  .trailer-preview-film {
+    gap: 24px;
+  }
+
+  .trailer-preview-player video {
+    max-height: 58svh;
+  }
+}
