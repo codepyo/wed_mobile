@@ -29,6 +29,21 @@ export default function TrailerPreviewPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
+    const targets = Array.from(document.querySelectorAll<HTMLElement>('.trailer-preview-page [data-reveal]'));
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      }),
+      { threshold: 0.08, rootMargin: '0px 0px -4% 0px' },
+    );
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     void fetch('/api/admin/media', {
       headers: { accept: 'application/json' },
