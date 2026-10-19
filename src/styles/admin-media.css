@@ -90,16 +90,54 @@
   font-weight: 600;
 }
 
-.admin-trailer-file input {
-  width: 100%;
-  min-width: 0;
-  min-height: 48px;
-  padding: 10px 12px;
+.admin-trailer-file__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.admin-trailer-file__picker {
+  min-height: 52px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   border: 1px solid #d3d0ca;
   background: #fff;
-  color: #1b1b1b;
+}
+
+.admin-trailer-file__picker button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid #1b1b1b;
+  border-radius: 999px;
+  color: #fff;
+  background: #1b1b1b;
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.admin-trailer-file__picker button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.admin-trailer-file__picker span {
+  min-width: 0;
+  overflow: hidden;
+  color: #777169;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .admin-trailer-progress {
@@ -381,6 +419,15 @@
   .admin-trailer-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .admin-trailer-file__picker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-trailer-file__picker button {
+    width: 100%;
   }
 
   .admin-trailer-actions button,
