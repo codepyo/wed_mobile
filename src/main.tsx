@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import AdminApp from './admin/AdminApp';
+import TrailerPreviewPage from './admin/TrailerPreviewPage';
 import './styles/global.css';
 import './styles/hero-typography.css';
 import './styles/features.css';
@@ -22,9 +23,10 @@ import './styles/admin-event.css';
 import './styles/admin-responsive.css';
 
 const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
+const isTrailerPreview = isAdminRoute && new URLSearchParams(window.location.search).get('preview') === 'trailer';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isAdminRoute ? <AdminApp /> : <App />}
+    {isTrailerPreview ? <TrailerPreviewPage /> : isAdminRoute ? <AdminApp /> : <App />}
   </StrictMode>,
 );
