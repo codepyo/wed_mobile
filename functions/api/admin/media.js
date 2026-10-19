@@ -99,7 +99,7 @@ async function imageDimensions(file) {
 
 async function readAssets(db) {
   const rows = await db.prepare(`
-    SELECT id, slot, object_key, mime_type, size_bytes, width, height,
+    SELECT id, slot, mime_type, size_bytes, width, height,
            object_position, alt_text, sort_order, active, created_at, updated_at
       FROM media_assets
      ORDER BY slot, active DESC, COALESCE(sort_order, 999999), created_at DESC
@@ -185,7 +185,7 @@ export async function onRequestPost(context) {
         VALUES (?, ?, 'MEDIA_UPLOAD', 'media_asset', ?, ?, ?)
       `).bind(
         crypto.randomUUID(), actorFromRequest(context.request), id,
-        `${slot} ${file.name} (${file.size} bytes${width && height ? `, ${width}x${height}` : ''})`, now,
+        `${slot} media (${file.size} bytes${width && height ? `, ${width}x${height}` : ''})`, now,
       ));
 
       await db.batch(statements);
@@ -194,7 +194,7 @@ export async function onRequestPost(context) {
       throw dbError;
     }
 
-    return json({ ok: true, id, slot, objectKey, assets: await readAssets(db) }, 201);
+    return json({ ok: true, id, slot, assets: await readAssets(db) }, 201);
   } catch (error) {
     console.error('ADMIN_MEDIA_POST_FAILED', error);
     return json({ ok: false, error: 'INTERNAL_ERROR' }, 500);
