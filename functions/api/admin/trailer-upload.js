@@ -21,32 +21,32 @@ function actorFromRequest(request) {
     'admin';
 }
 
-function safeName(name) {
-  return String(name || 'wedding-trailer.mp4')
-    .normalize('NFKD')
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 96) || 'wedding-trailer.mp4';
+function normalizedExtension(extension) {
+  const value = String(extension || '').trim().toLowerCase().replace(/^\./, '');
+  return ['mp4', 'm4v', 'mov', 'webm'].includes(value) ? value : '';
 }
 
-function normalizedVideoMime(fileName, mimeType) {
+function normalizedVideoMime(extension, mimeType) {
   const mime = String(mimeType || '').trim().toLowerCase();
   if (ALLOWED_VIDEO_MIME.has(mime)) return mime;
-  const name = String(fileName || '').toLowerCase();
-  if (name.endsWith('.mp4') || name.endsWith('.m4v')) return 'video/mp4';
-  if (name.endsWith('.webm')) return 'video/webm';
-  if (name.endsWith('.mov')) return 'video/quicktime';
+  if (extension === 'mp4' || extension === 'm4v') return 'video/mp4';
+  if (extension === 'webm') return 'video/webm';
+  if (extension === 'mov') return 'video/quicktime';
   return '';
 }
 
-function validateMeta(fileName, mimeType, size) {
-  const name = String(fileName || '').trim();
+function validateMeta(extension, mimeType, size) {
+  const normalizedExt = normalizedExtension(extension);
   const bytes = Number(size);
-  const normalizedMime = normalizedVideoMime(name, mimeType);
-  if (!name || !Number.isFinite(bytes) || bytes <= 0) return { error: 'INVALID_FILE' };
+  const normalizedMime = normalizedVideoMime(normalizedExt, mimeType);
+  if (!normalizedExt || !Number.isFinite(bytes) || bytes <= 0) return { error: 'INVALID_FILE' };
   if (bytes > MAX_TRAILER_BYTES) return { error: 'VIDEO_TOO_LARGE' };
   if (!normalizedMime) return { error: 'INVALID_VIDEO_TYPE' };
-  return { fileName: name.slice(0, 240), mimeType: normalizedMime, size: Math.trunc(bytes) };
+  return {
+    extension: normalizedExt,
+    mimeType: normalizedMime,
+    size: Math.trunc(bytes),
+  };
 }
 
 function validateMultipartKey(key) {
@@ -88,13 +88,13 @@ export async function onRequestPost(context) {
   if (action === 'create') {
     try {
       const body = await context.request.json().catch(() => ({}));
-      const meta = validateMeta(body.fileName, body.mimeType, body.size);
+      const meta = validateMeta(body.extension, body.mimeType, body.size);
       if (meta.error) return json({ ok: false, error: meta.error }, 400);
 
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       const day = now.slice(0, 10).replaceAll('-', '/');
-      const key = `trailer/${day}/${id}-${safeName(meta.fileName)}`;
+      const key = `trailer/${day}/${id}.${meta.extension}`;
       const multipart = await bucket.createMultipartUpload(key, {
         httpMetadata: {
           contentType: meta.mimeType,
@@ -103,7 +103,6 @@ export async function onRequestPost(context) {
         customMetadata: {
           slot: 'TRAILER',
           assetId: id,
-          originalName: meta.fileName,
         },
       });
 
@@ -130,7 +129,7 @@ export async function onRequestPost(context) {
       const id = String(body.id || '').trim();
       const key = String(body.key || '').trim();
       const uploadId = String(body.uploadId || '').trim();
-      const meta = validateMeta(body.fileName, body.mimeType, body.size);
+      const meta = validateMeta(body.extension, body.mimeType, body.size);
       const parts = normalizeParts(body.parts);
 
       if (!id || !validateMultipartKey(key) || !uploadId || meta.error || !parts) {
@@ -165,7 +164,7 @@ export async function onRequestPost(context) {
               id, slot, object_key, mime_type, size_bytes, width, height,
               object_position, alt_text, sort_order, active, created_at, updated_at
             ) VALUES (?, 'TRAILER', ?, ?, ?, NULL, NULL, NULL, ?, NULL, 1, ?, ?)
-          `).bind(id, key, meta.mimeType, meta.size, meta.fileName, now, now),
+          `).bind(id, key, meta.mimeType, meta.size, 'Wedding Trailer', now, now),
           db.prepare(`
             INSERT INTO admin_audit_log(id, actor, action, entity_type, entity_id, summary, created_at)
             VALUES (?, ?, 'TRAILER_UPLOAD', 'media_asset', ?, ?, ?)
@@ -173,7 +172,7 @@ export async function onRequestPost(context) {
             crypto.randomUUID(),
             actor,
             id,
-            `${meta.fileName} (${meta.size} bytes, multipart ${parts.length} parts)`,
+            `Wedding Trailer (${meta.size} bytes, multipart ${parts.length} parts)`,
             now,
           ),
         ]);

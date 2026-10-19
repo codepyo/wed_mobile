@@ -6,7 +6,6 @@ type TrailerAsset = {
   slot: string;
   mime_type: string;
   size_bytes: number;
-  alt_text?: string | null;
   active: number;
   created_at: string;
 };
@@ -115,7 +114,7 @@ export default function TrailerPreviewPage() {
                 브라우저가 HTML5 video 재생을 지원하지 않습니다.
               </video>
               <div className="trailer-preview-player__meta">
-                <span>{asset.alt_text || 'Wedding Trailer'}</span>
+                <span>Wedding Trailer</span>
                 <span>{formatBytes(asset.size_bytes)} · {asset.mime_type}</span>
               </div>
               {!isMp4 && (

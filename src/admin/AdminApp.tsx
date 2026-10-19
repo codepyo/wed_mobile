@@ -46,7 +46,6 @@ type SettingsData = {
 type MediaAsset = {
   id: string;
   slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | 'EVENT_SECRET' | 'TRAILER' | string;
-  object_key: string;
   mime_type: string;
   size_bytes: number;
   width?: number | null;
@@ -116,6 +115,16 @@ const bytesLabel = (value?: number) => {
   return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 };
 
+const mediaAssetLabel = (item: MediaAsset) => {
+  if (item.slot === 'HERO') return '대표 웨딩 사진';
+  if (item.slot === 'GALLERY') return item.sort_order != null ? `웨딩 갤러리 · ${Number(item.sort_order) + 1}` : '웨딩 갤러리';
+  if (item.slot === 'OG') return '공유 대표 이미지';
+  if (item.slot === 'BGM') return '배경음악';
+  if (item.slot === 'EVENT_SECRET') return 'EVENT 비공개 이미지';
+  if (item.slot === 'TRAILER') return 'Wedding Trailer';
+  return '미디어 자산';
+};
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { cache: 'no-store', ...init });
   const data = await response.json().catch(() => ({}));
@@ -148,7 +157,9 @@ export default function AdminApp() {
   const [trailerUploading, setTrailerUploading] = useState(false);
   const [trailerProgress, setTrailerProgress] = useState(0);
   const [trailerUploadStatus, setTrailerUploadStatus] = useState('');
+  const [trailerSelectedSize, setTrailerSelectedSize] = useState<number | null>(null);
   const trailerAbortRef = useRef<AbortController | null>(null);
+  const trailerFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadDashboard = async () => {
     setData(await api<DashboardData>('/api/admin/dashboard', { headers: { accept: 'application/json' } }));
@@ -436,7 +447,7 @@ export default function AdminApp() {
         method: 'POST',
         headers: { 'content-type': 'application/json; charset=utf-8' },
         body: JSON.stringify({
-          fileName: file.name,
+          extension: file.name.split('.').pop()?.toLowerCase() || '',
           mimeType: file.type,
           size: file.size,
         }),
@@ -479,7 +490,7 @@ export default function AdminApp() {
           id: init.id,
           key: init.key,
           uploadId: init.uploadId,
-          fileName: file.name,
+          extension: file.name.split('.').pop()?.toLowerCase() || '',
           mimeType: init.mimeType,
           size: file.size,
           parts: uploadedParts,
@@ -489,6 +500,7 @@ export default function AdminApp() {
       setTrailerProgress(100);
       setTrailerUploadStatus('업로드 완료');
       formElement.reset();
+      setTrailerSelectedSize(null);
       await loadMedia();
       setNotice('Wedding Trailer 업로드를 완료했습니다. PRIVATE PREVIEW에서 먼저 확인할 수 있습니다.');
     } catch (err) {
@@ -612,17 +624,25 @@ export default function AdminApp() {
                 <span>대용량 파일은 16MB 단위로 나눠 R2에 업로드합니다. 현재 최대 {bytesLabel(media.limits?.videoBytes || 1024 ** 3)}까지 허용합니다.</span>
                 <span>실제 공개용은 모바일 재생 호환성을 위해 MP4 · H.264 영상 / AAC 오디오 조합을 권장합니다.</span>
               </div>
-              {activeTrailer && <div className="admin-trailer-current"><span>현재 테스트 영상</span><strong>{activeTrailer.alt_text || activeTrailer.object_key}</strong><em>{bytesLabel(activeTrailer.size_bytes)} · {activeTrailer.mime_type}</em></div>}
-              <label className="admin-trailer-file">
+              {activeTrailer && <div className="admin-trailer-current"><span>현재 테스트 영상</span><strong>Wedding Trailer</strong><em>{bytesLabel(activeTrailer.size_bytes)} · {activeTrailer.mime_type}</em></div>}
+              <div className="admin-trailer-file">
                 <span>영상 파일</span>
                 <input
+                  ref={trailerFileInputRef}
+                  className="admin-trailer-file__input"
                   type="file"
                   name="trailerFile"
-                  required
                   disabled={trailerUploading}
                   accept=".mp4,.mov,.m4v,.webm,video/mp4,video/quicktime,video/x-m4v,video/webm"
+                  onChange={(event) => setTrailerSelectedSize(event.target.files?.[0]?.size || null)}
                 />
-              </label>
+                <div className="admin-trailer-file__picker">
+                  <button type="button" disabled={trailerUploading} onClick={() => trailerFileInputRef.current?.click()}>
+                    {trailerSelectedSize ? '다른 영상 선택' : '영상 선택'}
+                  </button>
+                  <span>{trailerSelectedSize ? `영상 선택됨 · ${bytesLabel(trailerSelectedSize)}` : 'MP4 · MOV · M4V · WebM'}</span>
+                </div>
+              </div>
               {(trailerUploading || trailerProgress > 0) && <div className="admin-trailer-progress" aria-live="polite">
                 <div><span>{trailerUploadStatus || '업로드 준비 중'}</span><strong>{trailerProgress}%</strong></div>
                 <i><b style={{ width: `${trailerProgress}%` }} /></i>
@@ -634,7 +654,7 @@ export default function AdminApp() {
             </form>
 
             <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}><div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div><div className="admin-media-fields"><label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="EVENT_SECRET">EVENT Secret 사진</option><option value="BGM">BGM 음원</option></select></label><label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label><label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label><label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label><label><span>Gallery / Secret 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label></div><div className="admin-settings-actions"><button type="submit" disabled={saving || trailerUploading || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div></form>
-            <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table admin-table--media"><thead><tr><th>용도</th><th>상태</th><th>파일</th><th>형식</th><th>크기</th><th>순서</th><th>등록일</th></tr></thead><tbody>{media.assets.map((item) => <tr key={item.id}><td><strong>{item.slot}</strong></td><td>{item.active ? '사용 중' : '이전 버전'}</td><td className="admin-table__message">{item.object_key}</td><td>{item.mime_type}</td><td>{bytesLabel(item.size_bytes)}</td><td>{item.sort_order ?? '-'}</td><td>{dateLabel(item.created_at)}</td></tr>)}</tbody></table></div>{!media.assets.length && <p className="admin-empty">등록된 미디어가 없습니다.</p>}</section>
+            <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table admin-table--media"><thead><tr><th>용도</th><th>상태</th><th>자산</th><th>형식</th><th>크기</th><th>순서</th><th>등록일</th></tr></thead><tbody>{media.assets.map((item) => <tr key={item.id}><td><strong>{item.slot}</strong></td><td>{item.active ? '사용 중' : '이전 버전'}</td><td className="admin-table__message">{mediaAssetLabel(item)}</td><td>{item.mime_type}</td><td>{bytesLabel(item.size_bytes)}</td><td>{item.sort_order ?? '-'}</td><td>{dateLabel(item.created_at)}</td></tr>)}</tbody></table></div>{!media.assets.length && <p className="admin-empty">등록된 미디어가 없습니다.</p>}</section>
           </>}
 
           {view === 'event' && eventData && <EventAdminPanel data={eventData} saving={saving} onModerate={(item, action) => void moderateEventDrawing(item, action)} />}
