@@ -14,6 +14,7 @@ const IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif
 const AUDIO_MIME = new Set(['audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/wav']);
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+const MAX_TRAILER_BYTES = 1024 * 1024 * 1024;
 
 function actorFromRequest(request) {
   return request.headers.get('cf-access-authenticated-user-email') ||
@@ -112,7 +113,7 @@ export async function onRequestGet(context) {
     return json({
       ok: true,
       bucketConfigured: Boolean(context.env.WEDDING_MEDIA),
-      limits: { imageBytes: MAX_IMAGE_BYTES, audioBytes: MAX_AUDIO_BYTES },
+      limits: { imageBytes: MAX_IMAGE_BYTES, audioBytes: MAX_AUDIO_BYTES, videoBytes: MAX_TRAILER_BYTES },
       assets,
     });
   } catch (error) {

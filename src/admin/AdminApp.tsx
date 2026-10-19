@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import EventAdminPanel, { type EventAdminData, type EventAdminDrawing } from './EventAdminPanel';
 
 type DashboardData = {
@@ -45,7 +45,7 @@ type SettingsData = {
 
 type MediaAsset = {
   id: string;
-  slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | 'EVENT_SECRET' | string;
+  slot: 'HERO' | 'GALLERY' | 'OG' | 'BGM' | 'EVENT_SECRET' | 'TRAILER' | string;
   object_key: string;
   mime_type: string;
   size_bytes: number;
@@ -60,7 +60,7 @@ type MediaAsset = {
 
 type MediaData = {
   bucketConfigured: boolean;
-  limits?: { imageBytes?: number; audioBytes?: number };
+  limits?: { imageBytes?: number; audioBytes?: number; videoBytes?: number };
   assets: MediaAsset[];
 };
 
@@ -89,6 +89,20 @@ type ContentData = {
   };
 };
 
+type TrailerUploadInit = {
+  id: string;
+  key: string;
+  uploadId: string;
+  chunkBytes: number;
+  maxBytes: number;
+  mimeType: string;
+};
+
+type TrailerUploadedPart = {
+  partNumber: number;
+  etag: string;
+};
+
 type View = 'dashboard' | 'rsvp' | 'guestbook' | 'content' | 'media' | 'event' | 'settings';
 
 const number = (value?: number) => Number(value ?? 0).toLocaleString('ko-KR');
@@ -98,7 +112,8 @@ const bytesLabel = (value?: number) => {
   const bytes = Number(value || 0);
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
 };
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
@@ -130,6 +145,10 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
+  const [trailerUploading, setTrailerUploading] = useState(false);
+  const [trailerProgress, setTrailerProgress] = useState(0);
+  const [trailerUploadStatus, setTrailerUploadStatus] = useState('');
+  const trailerAbortRef = useRef<AbortController | null>(null);
 
   const loadDashboard = async () => {
     setData(await api<DashboardData>('/api/admin/dashboard', { headers: { accept: 'application/json' } }));
@@ -341,6 +360,163 @@ export default function AdminApp() {
     }
   };
 
+
+  const uploadTrailerPart = async (
+    init: TrailerUploadInit,
+    partNumber: number,
+    chunk: Blob,
+    signal: AbortSignal,
+  ): Promise<TrailerUploadedPart> => {
+    const params = new URLSearchParams({
+      action: 'part',
+      key: init.key,
+      uploadId: init.uploadId,
+      partNumber: String(partNumber),
+    });
+
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      if (signal.aborted) throw new DOMException('Upload aborted', 'AbortError');
+      try {
+        const response = await fetch(`/api/admin/trailer-upload?${params}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/octet-stream' },
+          body: chunk,
+          signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(String(payload.error || 'PART_UPLOAD_FAILED'));
+        return {
+          partNumber: Number(payload.partNumber),
+          etag: String(payload.etag || ''),
+        };
+      } catch (error) {
+        if (signal.aborted) throw error;
+        lastError = error instanceof Error ? error : new Error('PART_UPLOAD_FAILED');
+        if (attempt < 3) await new Promise((resolve) => window.setTimeout(resolve, attempt * 700));
+      }
+    }
+    throw lastError || new Error('PART_UPLOAD_FAILED');
+  };
+
+  const abortTrailerUpload = () => {
+    trailerAbortRef.current?.abort();
+  };
+
+  const uploadTrailer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (trailerUploading || !media?.bucketConfigured) return;
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const file = form.get('trailerFile');
+    if (!(file instanceof File) || !file.size) {
+      setError('업로드할 예고편 영상 파일을 선택해 주세요.');
+      return;
+    }
+
+    const maxBytes = Number(media.limits?.videoBytes || 1024 ** 3);
+    if (file.size > maxBytes) {
+      setError(`예고편 영상은 현재 ${bytesLabel(maxBytes)} 이하만 업로드할 수 있습니다.`);
+      return;
+    }
+
+    const controller = new AbortController();
+    trailerAbortRef.current = controller;
+    setTrailerUploading(true);
+    setTrailerProgress(0);
+    setTrailerUploadStatus('대용량 업로드 세션을 준비하고 있습니다.');
+    setError('');
+    setNotice('');
+
+    let init: TrailerUploadInit | null = null;
+
+    try {
+      init = await api<TrailerUploadInit>('/api/admin/trailer-upload?action=create', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type,
+          size: file.size,
+        }),
+      });
+
+      const chunkBytes = Number(init.chunkBytes || 16 * 1024 * 1024);
+      const partCount = Math.ceil(file.size / chunkBytes);
+      const uploadedParts = new Array<TrailerUploadedPart>(partCount);
+      let nextIndex = 0;
+      let uploadedBytes = 0;
+
+      const worker = async () => {
+        while (true) {
+          const index = nextIndex;
+          nextIndex += 1;
+          if (index >= partCount) return;
+
+          const start = index * chunkBytes;
+          const end = Math.min(file.size, start + chunkBytes);
+          const chunk = file.slice(start, end);
+          setTrailerUploadStatus(`영상 조각 ${index + 1} / ${partCount} 업로드 중`);
+
+          const uploaded = await uploadTrailerPart(init as TrailerUploadInit, index + 1, chunk, controller.signal);
+          uploadedParts[index] = uploaded;
+          uploadedBytes += chunk.size;
+          setTrailerProgress(Math.min(99, Math.round((uploadedBytes / file.size) * 100)));
+        }
+      };
+
+      const concurrency = Math.min(3, partCount);
+      await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+      if (controller.signal.aborted) throw new DOMException('Upload aborted', 'AbortError');
+
+      setTrailerUploadStatus('R2에서 영상 파일을 조립하고 있습니다.');
+      await api('/api/admin/trailer-upload?action=complete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          id: init.id,
+          key: init.key,
+          uploadId: init.uploadId,
+          fileName: file.name,
+          mimeType: init.mimeType,
+          size: file.size,
+          parts: uploadedParts,
+        }),
+      });
+
+      setTrailerProgress(100);
+      setTrailerUploadStatus('업로드 완료');
+      formElement.reset();
+      await loadMedia();
+      setNotice('Wedding Trailer 업로드를 완료했습니다. PRIVATE PREVIEW에서 먼저 확인할 수 있습니다.');
+    } catch (err) {
+      if (init?.key && init?.uploadId) {
+        const params = new URLSearchParams({ key: init.key, uploadId: init.uploadId });
+        await fetch(`/api/admin/trailer-upload?${params}`, { method: 'DELETE' }).catch(() => {});
+      }
+
+      const aborted = controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError');
+      const code = err instanceof Error ? err.message : '';
+      if (aborted) {
+        setTrailerUploadStatus('업로드 취소됨');
+        setError('Wedding Trailer 업로드를 취소했습니다.');
+      } else if (code === 'VIDEO_TOO_LARGE') {
+        setError('영상 파일이 현재 허용 크기를 초과했습니다.');
+      } else if (code === 'INVALID_VIDEO_TYPE') {
+        setError('MP4, MOV, M4V 또는 WebM 영상 파일을 선택해 주세요.');
+      } else {
+        setError('Wedding Trailer 업로드에 실패했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.');
+      }
+    } finally {
+      trailerAbortRef.current = null;
+      setTrailerUploading(false);
+    }
+  };
+
+  const activeTrailer = media?.assets.find((item) => item.slot === 'TRAILER' && Number(item.active) === 1) || null;
+
   const exportRsvpCsv = () => {
     const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
     const rows = [
@@ -425,7 +601,39 @@ export default function AdminApp() {
 
           {view === 'media' && media && <>
             <section className="admin-panel"><div className="admin-panel__head"><div><small>R2 STORAGE</small><h3>미디어 저장소</h3></div></div><div className="admin-media-status"><strong>{media.bucketConfigured ? 'R2 연결됨' : 'R2 연결 전'}</strong><span>{media.bucketConfigured ? '새 미디어를 업로드할 수 있습니다.' : 'WEDDING_MEDIA R2 binding을 연결하면 업로드가 활성화됩니다.'}</span></div></section>
-            <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}><div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div><div className="admin-media-fields"><label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="EVENT_SECRET">EVENT Secret 사진</option><option value="BGM">BGM 음원</option></select></label><label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label><label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label><label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label><label><span>Gallery / Secret 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label></div><div className="admin-settings-actions"><button type="submit" disabled={saving || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div></form>
+
+            <form className="admin-panel admin-trailer-upload" onSubmit={uploadTrailer}>
+              <div className="admin-panel__head">
+                <div><small>PRIVATE WEDDING FILM</small><h3>Wedding Trailer 테스트</h3></div>
+                {activeTrailer && <a className="admin-trailer-preview-link" href="/admin?preview=trailer" target="_blank" rel="noreferrer">샘플 페이지 보기 ↗</a>}
+              </div>
+              <div className="admin-trailer-note">
+                <strong>공개 청첩장에는 아직 표시되지 않습니다.</strong>
+                <span>대용량 파일은 16MB 단위로 나눠 R2에 업로드합니다. 현재 최대 {bytesLabel(media.limits?.videoBytes || 1024 ** 3)}까지 허용합니다.</span>
+                <span>실제 공개용은 모바일 재생 호환성을 위해 MP4 · H.264 영상 / AAC 오디오 조합을 권장합니다.</span>
+              </div>
+              {activeTrailer && <div className="admin-trailer-current"><span>현재 테스트 영상</span><strong>{activeTrailer.alt_text || activeTrailer.object_key}</strong><em>{bytesLabel(activeTrailer.size_bytes)} · {activeTrailer.mime_type}</em></div>}
+              <label className="admin-trailer-file">
+                <span>영상 파일</span>
+                <input
+                  type="file"
+                  name="trailerFile"
+                  required
+                  disabled={trailerUploading}
+                  accept=".mp4,.mov,.m4v,.webm,video/mp4,video/quicktime,video/x-m4v,video/webm"
+                />
+              </label>
+              {(trailerUploading || trailerProgress > 0) && <div className="admin-trailer-progress" aria-live="polite">
+                <div><span>{trailerUploadStatus || '업로드 준비 중'}</span><strong>{trailerProgress}%</strong></div>
+                <i><b style={{ width: `${trailerProgress}%` }} /></i>
+              </div>}
+              <div className="admin-trailer-actions">
+                <button type="submit" disabled={trailerUploading || !media.bucketConfigured}>{trailerUploading ? '업로드 중…' : activeTrailer ? '새 영상으로 교체' : 'Wedding Trailer 업로드'}</button>
+                {trailerUploading && <button type="button" className="admin-trailer-cancel" onClick={abortTrailerUpload}>업로드 취소</button>}
+              </div>
+            </form>
+
+            <form className="admin-panel admin-media-upload" onSubmit={uploadMedia}><div className="admin-panel__head"><div><small>UPLOAD</small><h3>새 미디어 등록</h3></div></div><div className="admin-media-fields"><label><span>용도</span><select name="slot" defaultValue="HERO"><option value="HERO">Hero 대표사진</option><option value="GALLERY">Gallery 사진</option><option value="OG">공유 OG 이미지</option><option value="EVENT_SECRET">EVENT Secret 사진</option><option value="BGM">BGM 음원</option></select></label><label><span>파일</span><input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/avif,audio/mpeg,audio/mp4,audio/ogg,audio/wav" /></label><label><span>대체 텍스트</span><input type="text" name="altText" maxLength={300} placeholder="사진 설명" /></label><label><span>Object position</span><input type="text" name="objectPosition" maxLength={50} placeholder="예: 50% 40%" /></label><label><span>Gallery / Secret 순서</span><input type="number" name="sortOrder" min="0" max="9999" placeholder="0" /></label></div><div className="admin-settings-actions"><button type="submit" disabled={saving || trailerUploading || !media.bucketConfigured}>{saving ? '업로드 중…' : '미디어 업로드'}</button></div></form>
             <section className="admin-panel admin-table-panel"><div className="admin-table-wrap"><table className="admin-table admin-table--media"><thead><tr><th>용도</th><th>상태</th><th>파일</th><th>형식</th><th>크기</th><th>순서</th><th>등록일</th></tr></thead><tbody>{media.assets.map((item) => <tr key={item.id}><td><strong>{item.slot}</strong></td><td>{item.active ? '사용 중' : '이전 버전'}</td><td className="admin-table__message">{item.object_key}</td><td>{item.mime_type}</td><td>{bytesLabel(item.size_bytes)}</td><td>{item.sort_order ?? '-'}</td><td>{dateLabel(item.created_at)}</td></tr>)}</tbody></table></div>{!media.assets.length && <p className="admin-empty">등록된 미디어가 없습니다.</p>}</section>
           </>}
 
